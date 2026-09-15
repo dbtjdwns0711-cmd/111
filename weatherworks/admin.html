@@ -3,143 +3,101 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>기상 판정 기준 · 공휴일 설정 · WeatherWorks</title>
+<title>Admin · 공종·기준·표준작업량 - WeatherWorks</title>
 <link rel="stylesheet" href="css/style.css">
-<style>
-  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .form-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
-  .form-row:last-child { border-bottom: none; }
-  .form-label { font-size: 13.5px; font-weight: 600; color: #1e293b; }
-  .form-desc { font-size: 11.5px; color: #64748b; margin-top: 2px; }
-  .form-input-box { display: flex; align-items: center; gap: 6px; }
-  .form-input-box input { width: 90px; height: 36px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13.5px; text-align: right; box-sizing: border-box; }
-  .form-input-box span { font-size: 12.5px; color: #475569; font-weight: 600; }
-</style>
 </head>
 <body>
 <div id="app-shell">
-  <!-- 사이드바 -->
   <aside id="sidebar"></aside>
-
   <div class="main">
-    <!-- 상단바 -->
     <header id="topbar"></header>
-
     <main id="page-content">
-      <div class="page-head row space-between">
-        <div>
-          <h2>기상 판정 기준 · 공휴일 관리</h2>
-          <div class="desc">비작업일수 산정의 핵심 알고리즘 기준치(임계치)와 법정공휴일/현장휴무일을 설정합니다.</div>
+      <div class="page-head">
+        <h2>공사기간 산정근거 검토</h2>
+        <div class="desc">기상청 시간대별 관측 데이터(10개년) 분석 기반의 기상 비작업일 산정 기준 및 판정 조건을 확인합니다.</div>
+      </div>
+
+      <!-- 기존 공종별 기준표 대신 들어가는 코랩 정밀 분석 기준 카드 -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>기상 조건별 작업불능 상세 판정 기준 (코랩 정밀 분석 모델)</h3>
         </div>
-        <div>
-          <button class="btn btn-primary" onclick="saveCriteriaSettings()">설정 저장</button>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width: 16%;">구분</th>
+                <th style="width: 44%;">작업 불능 및 중지 판정 조건</th>
+                <th style="width: 20%;">적용 손실 시간</th>
+                <th style="width: 20%;">비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>기준 근무 시간</strong></td>
+                <td>주간 07:00 ~ 17:00 (1일 총 10시간 가동 구간 대상 분석)</td>
+                <td>-</td>
+                <td class="muted">야간 시간대 제외</td>
+              </tr>
+              <tr>
+                <td><strong>지속성 강우</strong></td>
+                <td>근무시간 중 <strong>2시간 연속 시간당 강수량 1.0mm 이상</strong> 발생 시</td>
+                <td>오전(07~12시) 또는 오후(13~17시) <strong>반일 오프</strong></td>
+                <td class="muted">현장 토공·골조 중지</td>
+              </tr>
+              <tr>
+                <td><strong>강풍</strong></td>
+                <td>근무시간 중 순간/시간 풍속 <strong>15.0m/s 이상</strong> 발생 시</td>
+                <td>해당 <strong>반일(오전/오후) 작업 중지</strong></td>
+                <td class="muted">크레인·고소작업 제한</td>
+              </tr>
+              <tr>
+                <td><strong>혹서기 (폭염)</strong></td>
+                <td>
+                  • 일 최고 체감온도(Tw) <strong>35.0°C 이상</strong>: 14시~17시 중지 (경량 손실)<br>
+                  • 일 최고 체감온도(Tw) <strong>38.0°C 이상</strong>: 당일 전일 작업 중지 (중증 손실)
+                </td>
+                <td>3~4시간 또는 전일 중지</td>
+                <td class="muted">여름철 습구체감온도 공식 적용</td>
+              </tr>
+              <tr>
+                <td><strong>혹한기 (한파)</strong></td>
+                <td>당일 일 최저기온 <strong>-12.0°C 이하</strong> 발생 시</td>
+                <td>당일 <strong>전일 작업 중지</strong></td>
+                <td class="muted">콘크리트 동결·토공 중지</td>
+              </tr>
+              <tr>
+                <td><strong>폭설 (적설)</strong></td>
+                <td>당일 일 최고 적설량 <strong>5.0cm 이상</strong> 관측 시</td>
+                <td>당일 <strong>전일 작업 중지</strong></td>
+                <td class="muted">제설 및 진입로 차단</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div class="settings-grid">
-        <!-- 1. 기상 불능일 판정 임계치 설정 -->
-        <div class="panel">
-          <div class="panel-head">
-            <h3>공종별 기상 불능일 판정 기준 (임계치)</h3>
-            <span class="muted" style="font-size:12px;">현장 여건 및 시방서 기준에 따라 수정 가능합니다.</span>
-          </div>
-
-          <div class="form-row">
-            <div>
-              <div class="form-label">강우량 기준 (일 강우량)</div>
-              <div class="form-desc">토공사, 방수공사, 포장공사 등의 작업 불능 기준</div>
-            </div>
-            <div class="form-input-box">
-              <input type="number" id="crit-rain" value="5.0" step="0.5">
-              <span>mm 이상</span>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div>
-              <div class="form-label">순간/최대 풍속 기준</div>
-              <div class="form-desc">타워크레인, 비계 설치, 고소작업 중지 기준</div>
-            </div>
-            <div class="form-input-box">
-              <input type="number" id="crit-wind" value="10.0" step="0.5">
-              <span>m/s 이상</span>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div>
-              <div class="form-label">동절기 한파 기준 (일 최저기온)</div>
-              <div class="form-desc">콘크리트 동결 방지 및 타설 제한 기온</div>
-            </div>
-            <div class="form-input-box">
-              <input type="number" id="crit-cold" value="-4.0" step="1">
-              <span>℃ 이하</span>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div>
-              <div class="form-label">하절기 폭염 기준 (일 최고기온)</div>
-              <div class="form-desc">산업안전보건법 옥외 작업 중지 권고 기준</div>
-            </div>
-            <div class="form-input-box">
-              <input type="number" id="crit-hot" value="35.0" step="1">
-              <span>℃ 이상</span>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div>
-              <div class="form-label">적설량 기준 (신적설)</div>
-              <div class="form-desc">옥외 현장 이동 및 자재 반입 중단 기준</div>
-            </div>
-            <div class="form-input-box">
-              <input type="number" id="crit-snow" value="3.0" step="0.5">
-              <span>cm 이상</span>
-            </div>
-          </div>
+      <!-- 하단 공휴일 관리 패널 (기존 기능 유지) -->
+      <div class="panel" style="margin-top: 24px;">
+        <div class="panel-head row space-between">
+          <h3>공휴일 관리</h3>
+          <button class="btn btn-sm btn-primary" id="btn-add-holiday">+ 공휴일 추가</button>
         </div>
-
-        <!-- 2. 주휴일 및 공휴일 관리 -->
-        <div class="panel">
-          <div class="panel-head">
-            <h3>현장 휴무일 및 공휴일 관리</h3>
-            <span class="muted" style="font-size:12px;">주당 근무일수 및 법정공휴일 적용 여부</span>
-          </div>
-
-          <div class="form-row">
-            <div>
-              <div class="form-label">주당 정기 휴무일</div>
-              <div class="form-desc">기본 주 5일제(토·일 휴무) 또는 주 6일제 선택</div>
-            </div>
-            <div>
-              <select id="crit-weekend" class="input" style="height:36px; padding:0 12px; font-size:13px;">
-                <option value="sat_sun" selected>주 5일 근무 (토·일 휴무)</option>
-                <option value="sun_only">주 6일 근무 (일요일만 휴무)</option>
-                <option value="none">무휴 현장 (연중 상시 작업)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div>
-              <div class="form-label">법정 공휴일 자동 차감</div>
-              <div class="form-desc">신정, 설·추석 연휴, 국경일 등 관공서 공휴일 반영</div>
-            </div>
-            <div>
-              <input type="checkbox" id="crit-holiday-sync" checked style="width:18px; height:18px; cursor:pointer;">
-            </div>
-          </div>
-
-          <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px;">
-            <div>
-              <div class="form-label">현장 지정 특별 휴무일 (임시휴일)</div>
-              <div class="form-desc">창립기념일, 현장 정기점검일 등 YYYY-MM-DD 형식 (줄바꿈 구분)</div>
-            </div>
-            <textarea id="crit-custom-holidays" class="input" style="width:100%; height:90px; font-size:12.5px; box-sizing:border-box;" placeholder="2026-05-01&#10;2026-10-02"></textarea>
-          </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>날짜</th>
+                <th>명칭</th>
+                <th>대체공휴일 여부</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-holidays"></tbody>
+          </table>
         </div>
       </div>
+
     </main>
   </div>
 </div>
@@ -148,53 +106,28 @@
 <script src="js/seed.js"></script>
 <script src="js/util.js"></script>
 <script src="js/calc.js"></script>
+<script src="js/sw-catalog.js"></script>
 <script src="js/nav.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  if (typeof renderSidebar === 'function') renderSidebar();
-  if (typeof renderTopbar === 'function') renderTopbar('기상 판정 기준 · 공휴일');
+renderSidebar();
+renderTopbar('Admin · 공종·기준·표준작업량');
 
-  loadCriteriaSettings();
-});
-
-function loadCriteriaSettings() {
+// 공휴일 목록 렌더링 유지
+try {
   const db = loadDB();
-  const crit = db.criteria || {
-    rain: 5.0,
-    wind: 10.0,
-    cold: -4.0,
-    hot: 35.0,
-    snow: 3.0,
-    weekend: 'sat_sun',
-    holidaySync: true,
-    customHolidays: '2026-05-01\n2026-10-02'
-  };
-
-  document.getElementById('crit-rain').value = crit.rain ?? 5.0;
-  document.getElementById('crit-wind').value = crit.wind ?? 10.0;
-  document.getElementById('crit-cold').value = crit.cold ?? -4.0;
-  document.getElementById('crit-hot').value = crit.hot ?? 35.0;
-  document.getElementById('crit-snow').value = crit.snow ?? 3.0;
-  document.getElementById('crit-weekend').value = crit.weekend || 'sat_sun';
-  document.getElementById('crit-holiday-sync').checked = crit.holidaySync !== false;
-  document.getElementById('crit-custom-holidays').value = crit.customHolidays || '';
-}
-
-function saveCriteriaSettings() {
-  const db = loadDB();
-  db.criteria = {
-    rain: parseFloat(document.getElementById('crit-rain').value) || 5.0,
-    wind: parseFloat(document.getElementById('crit-wind').value) || 10.0,
-    cold: parseFloat(document.getElementById('crit-cold').value) || -4.0,
-    hot: parseFloat(document.getElementById('crit-hot').value) || 35.0,
-    snow: parseFloat(document.getElementById('crit-snow').value) || 3.0,
-    weekend: document.getElementById('crit-weekend').value,
-    holidaySync: document.getElementById('crit-holiday-sync').checked,
-    customHolidays: document.getElementById('crit-custom-holidays').value.trim()
-  };
-
-  saveDB(db);
-  alert('기상 판정 기준 및 공휴일 설정이 저장되었습니다.\n공기 산정 및 비작업일 분석 알고리즘에 즉시 반영됩니다.');
+  const tb = document.getElementById('tbl-holidays');
+  if (tb && db && db.holidays) {
+    tb.innerHTML = db.holidays.map(h => `
+      <tr>
+        <td>${h.date}</td>
+        <td><strong>${h.name}</strong></td>
+        <td>${h.isSubstitute ? '<span class="badge" style="background:#f1f5f9;color:#475569;">대체공휴일</span>' : '-'}</td>
+        <td><button class="btn btn-sm" onclick="alert('기본 제공 공휴일 데이터입니다.')">관리</button></td>
+      </tr>
+    `).join('');
+  }
+} catch (e) {
+  console.error(e);
 }
 </script>
 </body>
