@@ -38,20 +38,11 @@
         <div id="verdict"></div>
       </div>
 
-      <div class="row gap-8" style="margin-top:6px; margin-bottom:24px;">
+      <div class="row gap-8" style="margin-top:6px;">
         <a class="btn" href="duration-workdays.html">작업일수 산정 상세 →</a>
         <a class="btn" href="duration-weather.html">비작업일수 산정 상세 →</a>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head flex-between">
-          <h3>전체 현장 요약</h3>
-          <button class="btn btn-sm" onclick="exportSummary()">CSV 내보내기</button>
-        </div>
-        <table>
-          <thead><tr><th>현장명</th><th class="num">총 일수</th><th class="num">작업가능일</th><th class="num">비작업일</th><th class="num">가능률</th></tr></thead>
-          <tbody id="summary-rows"></tbody>
-        </table>
+        <a class="btn" href="duration-basis.html">산정근거 검토 →</a>
+        <a class="btn btn-primary" href="duration-report.html">산정 결과 보고서 →</a>
       </div>
     </main>
   </div>
@@ -101,33 +92,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('verdict').innerHTML = diff >= 0
     ? `<div class="notice" style="background:var(--green-tint); border-color:#BFE0CC; color:var(--green);">산정 소요기간이 계약 공기 이내입니다 (여유 ${diff}일).</div>`
     : `<div class="notice" style="background:var(--red-tint); border-color:#EFC3B8; color:var(--red);">산정 소요기간이 계약 공기를 ${Math.abs(diff)}일 초과합니다. 공기 연장 검토 또는 비작업일수 저감 방안(공법 변경, 임시 가설 등)이 필요합니다.</div>`;
-
-  renderSummary();
 });
-
-let summaryCache = [];
-
-function renderSummary(){
-  const db = loadDB();
-  summaryCache = db.projects.map(p=>{
-    const days = computeDailyStatus(p, db);
-    const s = summarizeStatus(days);
-    return {name:p.name, total:s.total, working:s.working, nonWorking:s.nonWorking, workableRate:s.workableRate};
-  });
-  document.getElementById('summary-rows').innerHTML = summaryCache.map(s=>`<tr>
-    <td>${s.name}</td>
-    <td class="num mono">${s.total}</td>
-    <td class="num mono">${s.working}</td>
-    <td class="num mono">${s.nonWorking}</td>
-    <td class="num mono">${fmtNum(s.workableRate*100,1)}%</td>
-  </tr>`).join('') || '<tr><td colspan="5"><div class="empty">등록된 현장이 없습니다.</div></td></tr>';
-}
-
-function exportSummary(){
-  const headers = ['현장명','총 일수','작업가능일','비작업일','가능률(%)'];
-  const rows = summaryCache.map(s=>({'현장명':s.name,'총 일수':s.total,'작업가능일':s.working,'비작업일':s.nonWorking,'가능률(%)':fmtNum(s.workableRate*100,1)}));
-  downloadText('전체현장_요약.csv', toCSV(headers, rows), 'text/csv;charset=utf-8');
-}
 </script>
 </body>
 </html>
