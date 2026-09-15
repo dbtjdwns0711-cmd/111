@@ -46,7 +46,7 @@ function renderSidebar() {
   h += `
     </div>
     <div class="sidebar-footer">
-      예상값이며 실제 작업 여부는 현장 상황 및 공식 기상정보에 따라 달라질 수 있습니다.
+      예상값이며 실제 작업 여부는 현장 상황 및 공식 기상정보에 따라 달라질 수 있습니다
     </div>
   `;
 
