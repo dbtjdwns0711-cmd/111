@@ -8,179 +8,109 @@
 </head>
 <body>
 <div id="app-shell">
-  <!-- 사이드바 -->
   <aside id="sidebar"></aside>
-
   <div class="main">
-    <!-- 상단바 -->
     <header id="topbar"></header>
-
     <main id="page-content">
       <div class="page-head">
-        <h2>기상데이터 품질관리 (QC)</h2>
-        <div class="desc">10개년 기상청 종관(ASOS) 및 방재(AWS) 시계열 자료의 결측 정제, 한계 검사, 이상치 보정 현황을 검증합니다.</div>
+        <h2>기상데이터 품질관리</h2>
+      <div class="desc">대전 덕명동 시간별 자료를 기상청 대전 ASOS 133번 지점의 2016~2025년 자료와 비교한 품질검사 결과입니다.</div>
       </div>
 
-      <!-- 상단 QC 통계 카드 -->
-      <div class="grid grid-4" id="qc-stats-grid">
-        <div class="stat-card">
-          <div class="label">총 검증 관측치</div>
-          <div class="value" id="qc-total-obs">87,600<small> 건</small></div>
-        </div>
-        <div class="stat-card">
-          <div class="label">평균 데이터 유효율</div>
-          <div class="value" id="qc-valid-rate" style="color:var(--primary);">99.82<small> %</small></div>
-        </div>
-        <div class="stat-card">
-          <div class="label">결측치 대치 보정</div>
-          <div class="value" id="qc-interpolated">158<small> 건</small></div>
-        </div>
-        <div class="stat-card">
-          <div class="label">품질 보증 등급</div>
-          <div class="value" id="qc-grade"><span class="badge" style="background:#ecfdf5; color:#065f46; font-size:14px; padding:4px 8px;">Grade 1 (우수)</span></div>
-        </div>
+      <div class="notice">판정 기준: 같은 월의 10년 자료에서 1백분위수 미만 또는 99백분위수 초과. 원자료는 삭제하지 않고 이상치 후보로만 표시합니다.</div>
+
+      <div class="grid grid-4" style="margin-bottom:16px;">
+        <div class="kpi"><div class="muted">예정 시간</div><div id="kpi-expected" class="kpi-value">-</div><div class="muted">시간</div></div>
+        <div class="kpi"><div class="muted">정상</div><div id="kpi-normal" class="kpi-value" style="color:var(--green)">-</div><div class="muted">시간</div></div>
+        <div class="kpi"><div class="muted">결측</div><div id="kpi-missing" class="kpi-value" style="color:var(--amber)">-</div><div class="muted">시간</div></div>
+        <div class="kpi"><div class="muted">이상치 후보</div><div id="kpi-outlier" class="kpi-value" style="color:var(--red)">-</div><div class="muted">시간</div></div>
       </div>
 
-      <!-- 기상 요소별 QC 상세 내역 -->
       <div class="panel">
-        <div class="panel-head row space-between">
-          <h3>기상 관측 변수별 품질 지표 (10개년 누적)</h3>
-          <span class="muted" style="font-size:12px;">WMO / 기상청 국가기후데이터품질관리(KCDQ) 표준 적용</span>
-        </div>
-        <div class="table-wrap">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>검증 기상요소</th>
-                <th>물리적 한계범위</th>
-                <th class="num">총 관측수</th>
-                <th class="num">정상 관측치</th>
-                <th class="num">결측·이상치</th>
-                <th>적용 보정 알고리즘</th>
-                <th>데이터 적합도</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-qc-metrics">
-              <!-- JS 동적 로드 또는 기본값 -->
-            </tbody>
-          </table>
+        <div class="panel-head"><h3>검사 조건</h3></div>
+        <div class="row gap-16 wrap">
+          <label>관측지역<br><select><option>대전 덕명동</option></select></label>
+          <label>분석기간<br><input id="analysis-period" type="text" readonly></label>
+          <label>기준기간<br><select><option>2016~2025년</option></select></label>
+          <label>이상치 기준<br><select><option>1·99백분위수</option></select></label>
+          <button class="btn btn-primary" type="button" disabled>품질검사 실행</button>
         </div>
       </div>
 
-      <!-- 관측소별 가동률 및 신뢰도 매핑 현황 -->
       <div class="panel">
-        <div class="panel-head">
-          <h3>주요 관측소 센서 가동률 및 이상치 플래그 현황</h3>
-        </div>
-        <div class="table-wrap">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>지점코드</th>
-                <th>관측소명</th>
-                <th>관측 유형</th>
-                <th class="num">데이터 결측률</th>
-                <th class="num">센서 오류 플래그</th>
-                <th>보정 기법</th>
-                <th>상태</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-station-qc">
-              <tr>
-                <td class="mono">108</td>
-                <td><strong>서울</strong></td>
-                <td>종관 (ASOS)</td>
-                <td class="num mono">0.08%</td>
-                <td class="num mono">12건</td>
-                <td>인접 관측소 공간 내삽 (IDW)</td>
-                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">적합</span></td>
-              </tr>
-              <tr>
-                <td class="mono">232</td>
-                <td><strong>천안</strong></td>
-                <td>종관 (ASOS)</td>
-                <td class="num mono">0.14%</td>
-                <td class="num mono">18건</td>
-                <td>선형 스플라인 보간 및 이동평균</td>
-                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">적합</span></td>
-              </tr>
-              <tr>
-                <td class="mono">637</td>
-                <td><strong>아산배방</strong></td>
-                <td>방재 (AWS)</td>
-                <td class="num mono">0.25%</td>
-                <td class="num mono">24건</td>
-                <td>천안(232) ASOS 연동 복합 대치</td>
-                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">적합</span></td>
-              </tr>
-              <tr>
-                <td class="mono">133</td>
-                <td><strong>대전</strong></td>
-                <td>종관 (ASOS)</td>
-                <td class="num mono">0.05%</td>
-                <td class="num mono">8건</td>
-                <td>시계열 ARIMA 및 단기 선형 대치</td>
-                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">최적</span></td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="panel-head flex-between"><h3>시간별 상태 요약</h3><span id="quality-summary" class="muted"></span></div>
+        <div class="row gap-16 wrap">
+          <div style="flex:1;min-width:260px"><div class="muted">상태별 시간 비율</div><div class="bar-chart"><i id="bar-normal" style="background:var(--green)"></i><i id="bar-missing" style="background:var(--amber)"></i><i id="bar-outlier" style="background:var(--red)"></i></div><div class="row gap-8" style="margin-top:10px"><span class="tag tag-green">정상</span><span class="tag tag-amber">결측</span><span class="tag tag-red">이상치 후보</span></div></div>
+          <div style="flex:1;min-width:260px"><div class="muted">항목별 이상치 후보</div><p id="variable-summary" style="margin-top:18px"></p><p class="muted">기준자료: 기상청 대전 ASOS 133번, 2016~2025년</p></div>
         </div>
       </div>
 
-      <!-- 품질관리 알고리즘 가이드 -->
       <div class="panel">
-        <div class="panel-head">
-          <h3>품질관리 3단계 필터링 체계</h3>
+        <div class="panel-head flex-between">
+          <h3>검사 결과 · 상세 근거</h3>
+          <label class="checkline" style="margin:0;"><input type="checkbox" id="only-outlier" onchange="render()"> 이상치 후보만 표시</label>
         </div>
-        <div style="font-size:13px; color:var(--ink-soft); line-height:1.7;">
-          <p><strong>1단계 (물리적 한계 검사):</strong> 센서 측정 한계(예: 풍속 < 0m/s, 습도 > 100%, 기온 < -40°C 등)를 벗어난 데이터는 이상치 플래그(QC-Fail)로 분류하고 즉시 결측 처리합니다.</p>
-          <p><strong>2단계 (지속성 및 스텝 검사):</strong> 관측 센서의 동결이나 통신 단절로 인해 특정 측정값이 비정상적으로 장시간 고정되는 현상을 탐지합니다.</p>
-          <p><strong>3단계 (공간·시간 동시 대치):</strong> 결측치가 2시간 이내인 단기 누락은 전후 시각 이동평균으로 보간하며, 집중호우 결측이나 3시간 이상 지속 누락은 10km 이내 최인접 관측소 자료를 거리역가중(IDW) 방식으로 대치하여 연속 시계열을 완성합니다.</p>
-        </div>
+        <table>
+          <thead><tr><th>측정일시</th><th>항목</th><th class="num">실제값</th><th class="num">1백분위수</th><th class="num">99백분위수</th><th>판정</th><th>판정 이유</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>수정 이력</h3></div>
+        <table>
+          <thead><tr><th>수정일시</th><th>측정일시</th><th>항목</th><th>이전 값</th><th>수정 값</th></tr></thead>
+          <tbody id="log-rows"></tbody>
+        </table>
       </div>
     </main>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="js/db.js"></script>
 <script src="js/seed.js"></script>
 <script src="js/util.js"></script>
 <script src="js/calc.js"></script>
-<script src="js/quality-data.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/sw-catalog.js"></script>
+<script src="js/quality-data.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  // 사이드바 및 상단바 렌더링
-  if (typeof renderSidebar === 'function') renderSidebar();
-  if (typeof renderTopbar === 'function') renderTopbar('기상데이터 품질관리');
+function render(){
+  const meta = QUALITY_DATA.meta;
+  const db = loadDB();
+  const onlyOutlier = document.getElementById('only-outlier').checked;
+  // 최신 측정일시가 표의 위쪽에 오도록 내림차순 정렬합니다.
+  let list = QUALITY_DATA.records
+    .filter(r=>!onlyOutlier || r.status==='이상치 후보')
+    .sort((a,b)=>String(b.timestamp).localeCompare(String(a.timestamp)));
+  const fmt = (v,u='') => v===null || v===undefined ? '-' : `${v}${u}`;
 
-  // quality-data.js 연동 렌더링
-  const rawData = (typeof QUALITY_METRICS !== 'undefined') ? QUALITY_METRICS : null;
-  const tbody = document.getElementById('tbl-qc-metrics');
+  document.getElementById('rows').innerHTML = list.map(w=>{
+    const first = w.flags[0]; const b = first ? w.bounds[first] : null;
+    const actual = w.status==='결측' ? '-' : `기온 ${fmt(w.temperature,'℃')} · 습도 ${fmt(w.humidity,'%')} · 강수 ${fmt(w.rain1h,'mm')} · 풍속 ${fmt(w.wind,'m/s')}`;
+    return `<tr><td class="mono">${w.timestamp}</td><td>${w.flags.length ? w.flags.join(', ') : '전체 항목'}</td><td class="num mono">${actual}</td><td class="num mono">${b?b.p01:'-'}</td><td class="num mono">${b?b.p99:'-'}</td><td><span class="tag ${w.status==='정상'?'tag-green':w.status==='결측'?'tag-amber':'tag-red'}">${w.status}</span></td><td>${w.reason}</td></tr>`;
+  }).join('') || '<tr><td colspan="7"><div class="empty">표시할 데이터가 없습니다.</div></td></tr>';
 
-  const defaultMetrics = [
-    { item: '시간 강수량 (RN)', range: '0.0 ~ 150.0 mm/h', total: '87,600', valid: '87,412', err: '188 건', method: '인접 AWS 가중평균 및 삼차 스플라인', score: '99.78%' },
-    { item: '시간 풍속 (WS)', range: '0.0 ~ 65.0 m/s', total: '87,600', valid: '87,550', err: '50 건', method: '단기 선형 보간 및 순간풍속 비교', score: '99.94%' },
-    { item: '기온 (TA)', range: '-35.0 ~ 45.0 °C', total: '87,600', valid: '87,585', err: '15 건', method: '일변화 모델 기반 시계열 대치', score: '99.98%' },
-    { item: '습도 (HM)', range: '0 ~ 100 %', total: '87,600', valid: '87,542', err: '58 건', method: '상대습도-기온 물리 방정식 상관 대치', score: '99.93%' },
-    { item: '최심적설 (SD)', range: '0.0 ~ 150.0 cm', total: '87,600', valid: '87,593', err: '7 건', method: '인근 ASOS 적설계 및 목측 데이터 연계', score: '99.99%' }
-  ];
+  document.getElementById('log-rows').innerHTML = '<tr><td colspan="5"><div class="empty">현재 자동 판정 결과에는 수정 이력이 없습니다.</div></td></tr>';
+}
 
-  const list = (rawData && rawData.metrics) ? rawData.metrics : defaultMetrics;
-
-  if (tbody) {
-    tbody.innerHTML = list.map(m => `
-      <tr>
-        <td><strong>${m.item}</strong></td>
-        <td class="mono" style="font-size:12px;">${m.range}</td>
-        <td class="num mono">${m.total}</td>
-        <td class="num mono">${m.valid}</td>
-        <td class="num mono" style="color:var(--primary); font-weight:600;">${m.err}</td>
-        <td class="muted" style="font-size:12px;">${m.method}</td>
-        <td><span class="badge" style="background:#ecfdf5; color:#065f46; font-weight:600;">${m.score}</span></td>
-      </tr>
-    `).join('');
-  }
+document.addEventListener('DOMContentLoaded', ()=>{
+  renderTopbar('기상데이터 품질관리');
+  const m=QUALITY_DATA.meta;
+  document.getElementById('kpi-expected').textContent=m.expected;
+  document.getElementById('kpi-normal').textContent=m.normal;
+  document.getElementById('kpi-missing').textContent=m.missing;
+  document.getElementById('kpi-outlier').textContent=m.outlier;
+  document.getElementById('analysis-period').value=`${m.start} ~ ${m.end}`;
+  document.getElementById('quality-summary').textContent=`수집률 ${m.collectionRate}% · 총 ${QUALITY_DATA.records.length}개 시간대`;
+  document.getElementById('variable-summary').textContent=Object.entries(m.variableOutliers).map(([k,v])=>`${k} ${v}건`).join(' · ');
+  document.getElementById('bar-normal').style.height=(m.normal/m.expected*100)+'%';
+  document.getElementById('bar-missing').style.height=(m.missing/m.expected*100)+'%';
+  document.getElementById('bar-outlier').style.height=(m.outlier/m.expected*100)+'%';
+  // 표를 다시 그리는 경우에도 항상 최신 측정일시가 먼저 오도록 고정합니다.
+  QUALITY_DATA.records.sort((a,b)=>String(b.timestamp).localeCompare(String(a.timestamp)));
+  render();
 });
 </script>
 </body>
