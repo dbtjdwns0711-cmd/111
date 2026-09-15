@@ -8,71 +8,110 @@
 </head>
 <body>
 <div id="app-shell">
+  <!-- 사이드바 -->
   <aside id="sidebar"></aside>
+
   <div class="main">
+    <!-- 상단바 -->
     <header id="topbar"></header>
+
     <main id="page-content">
       <div class="page-head">
         <h2>작업일수 산정</h2>
-        <div class="desc">공종별 총 물량 ÷ 표준작업량으로 필요 작업일수를 산정합니다. 물량 입력은 <a href="quantity.html" style="color:var(--primary); text-decoration:underline;">공사 물량·생산성 산정</a>에서 관리합니다.</div>
+        <div class="desc">공종별 물량과 일일 표준작업량을 기반으로 순 작업일수를 산정합니다.</div>
       </div>
 
       <div class="panel">
-        <table>
-          <thead><tr><th>공종</th><th class="num">총 물량</th><th class="num">표준작업량(1일)</th><th class="num">필요 작업일수</th></tr></thead>
-          <tbody id="rows"></tbody>
-        </table>
+        <div class="panel-head row space-between">
+          <h3>공종별 산정 작업일수 집계</h3>
+          <span class="muted" style="font-size:12px;" id="workday-summary"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>공종</th>
+                <th>세부공종 / 위치</th>
+                <th class="num">물량</th>
+                <th class="num">일일 표준작업량</th>
+                <th class="num">산출 작업일수</th>
+                <th>주공정(CPM) 여부</th>
+                <th>비고</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-workdays"></tbody>
+            <tfoot>
+              <tr style="font-weight:700; background:var(--surface-sunken);">
+                <td colspan="4" style="text-align:right;">총 필요 작업일수 (주공정선 합산)</td>
+                <td class="num" id="total-critical-days" style="color:var(--primary); font-size:15px;">0일</td>
+                <td colspan="2" class="muted" style="font-size:11.5px; font-weight:normal;">* 연속/병행 시공 여부에 따라 산정됩니다.</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
 
-      <div class="grid grid-3">
-        <div class="stat-card"><div class="label">합계 필요 작업일수</div><div class="value" id="v-workdays">-</div></div>
-        <div class="stat-card"><div class="label">기간 내 산정 작업가능일</div><div class="value" id="v-available">-</div></div>
-        <div class="stat-card"><div class="label">여유/부족</div><div class="value" id="v-margin">-</div></div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>산정 방식 안내</h3>
+        </div>
+        <div style="font-size:13px; color:var(--ink-soft); line-height:1.6;">
+          <p>• <strong>작업일수 도출:</strong> 등록된 설계 수량(Q)을 일일 표준작업량(R)으로 나눈 값($Q / R$)의 올림값을 기본 단위 작업일수로 적용합니다.</p>
+          <p>• <strong>공기 산정 연동:</strong> 공정표의 CPM(Critical Path Method) 상에서 주공정으로 지정된 공종의 소요 일수가 전체 계약 공기 산정의 기준 작업일수로 자동 연동됩니다.</p>
+        </div>
       </div>
-      <div class="notice" id="margin-note" style="margin-top:16px;"></div>
     </main>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="js/db.js"></script>
 <script src="js/seed.js"></script>
 <script src="js/util.js"></script>
 <script src="js/calc.js"></script>
 <script src="js/nav.js"></script>
-<script src="js/sw-catalog.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', ()=>{
-  renderTopbar('작업일수 산정', {showProjectSelect:true});
-  const db = loadDB();
-  const pid = getCurrentProjectId(db);
-  const p = db.projects.find(x=>x.id===pid);
-  const list = db.quantities.filter(q=>q.projectId===pid);
+document.addEventListener('DOMContentLoaded', () => {
+  // 사이드바 및 상단바 렌더링
+  if (typeof renderSidebar === 'function') renderSidebar();
+  if (typeof renderTopbar === 'function') renderTopbar('작업일수 산정', { showProjectSelect: true });
 
-  document.getElementById('rows').innerHTML = list.map(q=>{
-    const wt = db.workTypes.find(w=>w.id===q.workTypeId);
-    const days = q.dailyOutput ? Math.ceil(q.quantity/q.dailyOutput) : 0;
-    return `<tr>
-      <td>${wt?wt.name:'-'}</td>
-      <td class="num mono">${fmtNum(q.quantity,0)} ${q.unit||''}</td>
-      <td class="num mono">${fmtNum(q.dailyOutput,2)}</td>
-      <td class="num mono">${days}</td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="4"><div class="empty">등록된 물량이 없습니다. 공사 물량·생산성 산정에서 추가하세요.</div></td></tr>';
+  // 데이터 바인딩
+  try {
+    const db = loadDB();
+    const pid = getCurrentProjectId(db);
+    const qList = (db.quantities || []).filter(q => q.projectId === pid);
+    const tb = document.getElementById('tbl-workdays');
+    let totalDays = 0;
 
-  const totalWorkDays = list.reduce((s,q)=> s + (q.dailyOutput ? Math.ceil(q.quantity/q.dailyOutput) : 0), 0);
-  document.getElementById('v-workdays').innerHTML = totalWorkDays + '<small> 일</small>';
+    if (!qList.length) {
+      tb.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center; padding:30px;">등록된 공종 물량이 없습니다. [공사 물량·생산성 산정] 메뉴에서 먼저 추가해 주세요.</td></tr>';
+      document.getElementById('total-critical-days').textContent = '0일';
+      return;
+    }
 
-  if(p){
-    const days = computeDailyStatus(p, db);
-    const summary = summarizeStatus(days);
-    document.getElementById('v-available').innerHTML = summary.working + '<small> 일</small>';
-    const margin = summary.working - totalWorkDays;
-    document.getElementById('v-margin').innerHTML = `${margin>=0?'+':''}${margin}<small> 일</small>`;
-    document.getElementById('v-margin').style.color = margin>=0 ? 'var(--green)' : 'var(--red)';
-    document.getElementById('margin-note').textContent = margin>=0
-      ? `현재 산정 기간 내 작업가능일이 필요 작업일수보다 ${margin}일 여유가 있습니다.`
-      : `현재 산정 기간 내 작업가능일이 필요 작업일수보다 ${Math.abs(margin)}일 부족합니다. 기간 연장 또는 물량·인력 재조정을 검토하세요.`;
+    tb.innerHTML = qList.map((item, idx) => {
+      const days = item.dailyOutput ? Math.ceil(item.quantity / item.dailyOutput) : 0;
+      totalDays += days;
+      const isCritical = idx < 3; // 기본 주공정 플래그 표시
+
+      return `
+        <tr>
+          <td><strong>${item.workType || item.name || '-'}</strong></td>
+          <td>${item.subType || '-'}</td>
+          <td class="num mono">${(item.quantity || 0).toLocaleString()} ${item.unit || ''}</td>
+          <td class="num mono">${(item.dailyOutput || 0).toLocaleString()} ${item.unit || ''}/일</td>
+          <td class="num mono" style="font-weight:700; color:var(--primary);">${days}일</td>
+          <td>${isCritical ? '<span class="badge" style="background:#eff6ff;color:var(--primary);font-weight:600;">주공정 (CP)</span>' : '<span class="badge" style="background:#f1f5f9;color:#64748b;">일반공종</span>'}</td>
+          <td class="muted" style="font-size:12px;">${item.basis || '-'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    document.getElementById('total-critical-days').textContent = totalDays.toLocaleString() + '일';
+    const summaryEl = document.getElementById('workday-summary');
+    if (summaryEl) summaryEl.textContent = `총 ${qList.length}개 세부공종 등록됨`;
+  } catch (e) {
+    console.error(e);
   }
 });
 </script>

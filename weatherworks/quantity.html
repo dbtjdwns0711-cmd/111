@@ -112,7 +112,6 @@ function renderCatalog(list, isFiltered = false) {
   const el = document.getElementById('catalog-list');
   const countEl = document.getElementById('catalog-count');
   
-  // 검색하지 않았을 때는 상위 5개만 노출
   const displayItems = isFiltered ? list : list.slice(0, 5);
   currentDisplayList = displayItems;
 
@@ -130,7 +129,6 @@ function renderCatalog(list, isFiltered = false) {
   el.innerHTML = displayItems.map((c, i) => {
     const title = c.name || '품목';
     const type = c.category || '토공사';
-    // sw-catalog.js의 amount 필드 명시적 로드
     const rate = Number(c.amount) || 0;
     const unit = c.unit || 'm³';
     const desc = c.condition ? c.condition.replace(/\\n/g, '<br>') : (c.basis || '');
@@ -263,7 +261,10 @@ function renderCurrentTasks() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  renderTopbar('공사 물량·생산성 산정', { showProjectSelect: true });
+  // 사이드바 및 상단바 확실하게 렌더링
+  if (typeof renderSidebar === 'function') renderSidebar();
+  if (typeof renderTopbar === 'function') renderTopbar('공사 물량·생산성 산정', { showProjectSelect: true });
+
   renderCatalog(rawCatalog, false);
   renderCurrentTasks();
 
