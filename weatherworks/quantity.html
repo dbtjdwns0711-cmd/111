@@ -6,93 +6,125 @@
 <title>공사 물량·생산성 산정 · WeatherWorks</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
-  .spec-card { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; background: #fff; display: flex; justify-content: space-between; align-items: center; }
-  .spec-info { max-width: 75%; }
-  .spec-title { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
-  .spec-desc { font-size: 12px; color: var(--ink-soft); line-height: 1.5; white-space: pre-line; }
-  .spec-rate { font-size: 15px; font-weight: bold; color: var(--brand); margin-right: 15px; }
-  .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; }
-  .input-box { display: flex; gap: 15px; align-items: flex-end; margin-top: 10px; flex-wrap: wrap; }
-  .input-field { display: flex; flex-direction: column; gap: 6px; }
-  .input-field label { font-size: 12px; font-weight: bold; color: var(--ink-soft); }
-  .input-field input, .input-field select { padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+  .catalog-card { background: #fff; border: 1px solid var(--line, #e2e8f0); border-radius: 8px; padding: 18px 20px; margin-bottom: 20px; }
+  .catalog-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .catalog-title { font-size: 16px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+  .catalog-desc { font-size: 13px; color: #64748b; line-height: 1.6; margin-top: 8px; }
+  .input-row { display: grid; grid-template-columns: 140px 1fr 140px 160px auto; gap: 12px; align-items: flex-end; }
+  .input-col { display: flex; flex-direction: column; gap: 6px; }
+  .input-col label { font-size: 12px; font-weight: 600; color: #64748b; }
+  .input-col select, .input-col input { height: 38px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13.5px; background: #fff; width: 100%; box-sizing: border-box; }
+  .input-col select:disabled, .input-col input:read-only { background: #f8fafc; color: #475569; }
 </style>
 </head>
 <body>
 <div id="app-shell">
+  <!-- 사이드바 -->
   <aside id="sidebar"></aside>
+
   <div class="main">
+    <!-- 상단바 -->
     <header id="topbar"></header>
+
     <main id="page-content">
-      <div class="page-head">
-        <h2>공사 물량·생산성 산정</h2>
-        <div class="desc">표준작업량 기준 품목을 선택하거나 직접 입력하여 소요 공사일수를 산출하고 공정표로 연동합니다.</div>
+      <div class="page-head row space-between">
+        <div>
+          <h2>공사 물량·생산성 산정</h2>
+          <div class="desc">표준품셈 카탈로그에서 품목을 선택하여 일일 작업량을 산정하고, 총 공사 물량에 따른 순 작업일수를 계산합니다.</div>
+        </div>
+        <div class="row gap-8 items-center">
+          <span style="font-size:13px; color:#64748b; font-weight:600;">현장:</span>
+          <select id="sel-current-project" class="input" style="width:220px; font-weight:600;" onchange="switchProject(this.value)"></select>
+        </div>
       </div>
 
-      <!-- [상단] 표준작업량 기준 카탈로그 (대표 5개 미리보기) -->
-      <div class="panel">
-        <div class="panel-head flex-between">
-          <h3>표준작업량 기준 카탈로그 (대표 5개 미리보기)</h3>
-          <span class="hint" id="catalog-count">5개 미리보기</span>
+      <!-- 추천/대표 표준품셈 카드 -->
+      <div class="catalog-card" id="featured-catalog">
+        <div class="catalog-card-header">
+          <div>
+            <div class="catalog-title">
+              <span id="feat-title">관로 터파기 (인력)</span>
+              <span class="badge" id="feat-category" style="background:#eff6ff; color:#1d4ed8;">토공사</span>
+            </div>
+            <div class="catalog-desc" id="feat-desc">
+              • 기존 지하매설물(가스관, 전기통신관) 인접 구간<br>
+              • 장비 파손 리스크 방지를 위한 순수 인력 터파기<br>
+              • 토질 조건: 토사 / 인당 품셈 환산 적용
+            </div>
+          </div>
+          <div class="row gap-12 items-center">
+            <span style="font-size: 20px; font-weight: 800; color: #1e293b;" id="feat-rate">12 m³</span>
+            <button class="btn btn-primary" onclick="applyFeatured()">이 값 사용</button>
+          </div>
         </div>
-        
-        <div class="filter-bar">
-          <input type="text" id="catalogSearch" placeholder="품목명, 규격 검색 (입력 시 전체 검색)..." style="max-width:350px; padding:8px 12px; border:1px solid var(--line); border-radius:6px;" oninput="filterCatalog()">
-        </div>
-
-        <div id="catalog-list"></div>
       </div>
 
-      <!-- [중단] 물량 추가 및 소요 공기 산출 폼 -->
+      <!-- 물량 추가 및 소요 공기 산출 (목록상자 드롭다운 적용) -->
       <div class="panel">
-        <div class="panel-head flex-between">
+        <div class="panel-head">
           <h3>물량 추가 및 소요 공기 산출</h3>
-          <span class="hint">상단 목록에서 [이 값 사용]을 누르면 자동 입력됩니다.</span>
-        </div>
-        <div id="selected-spec-banner" class="notice" style="margin-bottom: 12px; background: #f0f7ff; border-color: #b9dafb; color: #1e40af;">
-          상단 목록에서 <strong>[이 값 사용]</strong> 버튼을 클릭하거나 직접 수치를 입력하세요.
+          <span class="muted" style="font-size:12px;">공종과 세부 품목 규격을 드롭다운에서 선택하면 일일작업량이 자동 입력됩니다.</span>
         </div>
 
-        <div class="input-box">
-          <div class="input-field" style="width: 140px;">
-            <label>공종</label>
-            <input type="text" id="formWorkType" value="토공사" readonly style="background:#f8f9fa;">
+        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:10px 14px; margin-bottom:16px; font-size:12.5px; color:#1e40af;" id="selection-guide">
+          공종과 품목을 선택한 후 총 물량을 입력하세요.
+        </div>
+
+        <div class="input-row">
+          <div class="input-col">
+            <label>공종 대분류</label>
+            <select id="sel-category" onchange="onCategoryChange(this.value)">
+              <option value="토공사">토공사</option>
+              <option value="철근콘크리트">철근콘크리트</option>
+              <option value="포장공사">포장공사</option>
+              <option value="가설·기타">가설·기타</option>
+            </select>
           </div>
-          <div class="input-field" style="flex-grow: 1; min-width: 220px;">
-            <label>세부 품목 규격</label>
-            <input type="text" id="formItemSpec" placeholder="품목 규격을 선택하거나 입력하세요">
+          <div class="input-col">
+            <label>세부 품목 규격 (목록)</label>
+            <select id="sel-item" onchange="onItemChange(this.value)">
+              <!-- JS 동적 로드 -->
+            </select>
           </div>
-          <div class="input-field" style="width: 130px;">
-            <label>일일작업량</label>
-            <input type="number" id="formDailyRate" placeholder="0">
+          <div class="input-col">
+            <label>일일작업량 (<span id="txt-unit">단위</span>)</label>
+            <input type="number" id="inp-daily-rate" readonly>
           </div>
-          <div class="input-field" style="width: 140px;">
-            <label>총 물량</label>
-            <input type="number" id="formTotalQty" placeholder="수량 입력">
+          <div class="input-col">
+            <label>총 물량 (<span id="txt-unit-total">단위</span>)</label>
+            <input type="number" id="inp-total-qty" placeholder="수량 입력" oninput="calculateDays()">
           </div>
-          <button class="btn btn-primary" onclick="calculateAndSave()" style="height: 38px; padding: 0 18px;">+ 공정표 연동 추가</button>
+          <button class="btn btn-primary" style="height:38px; padding:0 20px;" onclick="addQuantityItem()">+ 공정표 연동 추가</button>
         </div>
       </div>
 
-      <!-- [하단] 현재 현장 물량 산정 내역 목록 -->
+      <!-- 현재 현장 물량 산정 내역 -->
       <div class="panel">
-        <div class="panel-head flex-between">
+        <div class="panel-head row space-between">
           <h3>현재 현장 물량 산정 내역</h3>
-          <a href="project-detail.html" class="hint" style="text-decoration:none; color:#2563eb; font-weight:bold;">간트차트 확인하러 가기 →</a>
+          <a href="schedule.html" class="muted" style="color:var(--primary); font-size:13px; font-weight:600; text-decoration:none;">간트차트 확인하러 가기 &rarr;</a>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>공종 및 세부 품목</th>
-              <th class="num">일일 표준작업량</th>
-              <th class="num">총 물량</th>
-              <th class="num">산정 작업일수</th>
-              <th>작업 예정 구간</th>
-              <th>관리</th>
-            </tr>
-          </thead>
-          <tbody id="current-task-rows"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>공종 및 세부 품목</th>
+                <th class="num">일일 표준작업량</th>
+                <th class="num">총 물량</th>
+                <th class="num">산정 작업일수</th>
+                <th>작업 예정 구간</th>
+                <th style="text-align:center;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-quantities">
+              <tr>
+                <td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">
+                  현재 선택된 현장에 등록된 물량 산정 내역이 없습니다.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </main>
   </div>
@@ -105,176 +137,198 @@
 <script src="js/calc.js"></script>
 <script src="js/nav.js"></script>
 <script>
-const rawCatalog = (typeof SW_CATALOG !== 'undefined') ? SW_CATALOG : [];
-let currentDisplayList = [];
+// 품셈 카탈로그 기본 데이터셋 (sw-catalog.js가 로드되지 않았을 때의 폴백)
+const DEFAULT_CATALOG = [
+  { cat: "토공사", name: "관로 터파기 (인력/토사)", rate: 12, unit: "m³", desc: "기존 지하매설물 인접 구간 인력 터파기" },
+  { cat: "토공사", name: "터파기 (백호 0.7m³ / 토사)", rate: 350, unit: "m³", desc: "토사 굴착 및 덤프 상차 기준" },
+  { cat: "토공사", name: "되메우기 및 다짐 (롤러)", rate: 220, unit: "m³", desc: "층다짐 30cm 기준" },
+  { cat: "철근콘크리트", name: "레미콘 타설 (펌프카)", rate: 240, unit: "m³", desc: "기초 및 슬래브 타설 기준" },
+  { cat: "철근콘크리트", name: "철근 가공 및 조립", rate: 8.5, unit: "ton", desc: "일반 구조물 철근 배근" },
+  { cat: "철근콘크리트", name: "유로폼 거푸집 설치", rate: 65, unit: "m²", desc: "벽체 및 기초 거푸집 조립" },
+  { cat: "포장공사", name: "아스콘 기층 포장 (피니셔)", rate: 600, unit: "m²", desc: "두께 10cm 기준 포장" },
+  { cat: "포장공사", name: "보차도경계석 거푸집/타설", rate: 90, unit: "m", desc: "직선 구간 기준" },
+  { cat: "가설·기타", name: "비계 설치 및 해체", rate: 120, unit: "m²", desc: "강관 쌍줄비계 기준" }
+];
 
-function renderCatalog(list, isFiltered = false) {
-  const el = document.getElementById('catalog-list');
-  const countEl = document.getElementById('catalog-count');
-  
-  const displayItems = isFiltered ? list : list.slice(0, 5);
-  currentDisplayList = displayItems;
+let catalogList = [];
+let currentProjectId = "";
 
-  if (countEl) {
-    countEl.textContent = isFiltered 
-      ? `검색 결과 ${displayItems.length}개 표시` 
-      : `대표 5개 미리보기 (전체 ${list.length}개 규격 중)`;
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof renderSidebar === 'function') renderSidebar();
+  if (typeof renderTopbar === 'function') renderTopbar('공사 물량·생산성 산정');
+
+  // 카탈로그 로드
+  if (typeof SW_CATALOG !== 'undefined' && Array.isArray(SW_CATALOG)) {
+    catalogList = SW_CATALOG;
+  } else {
+    catalogList = DEFAULT_CATALOG;
   }
 
-  if (!displayItems.length) {
-    el.innerHTML = '<div style="padding:30px; text-align:center; color:#888;">일치하는 품목 규격이 없습니다.</div>';
+  initProjectSelector();
+  initCategoryDropdown();
+});
+
+// 프로젝트 셀렉트 박스 초기화
+function initProjectSelector() {
+  const db = loadDB();
+  const sel = document.getElementById('sel-current-project');
+  if (!db.projects || !db.projects.length) {
+    sel.innerHTML = '<option value="">등록된 현장 없음</option>';
     return;
   }
 
-  el.innerHTML = displayItems.map((c, i) => {
-    const title = c.name || '품목';
-    const type = c.category || '토공사';
-    const rate = Number(c.amount) || 0;
-    const unit = c.unit || 'm³';
-    const desc = c.condition ? c.condition.replace(/\\n/g, '<br>') : (c.basis || '');
+  sel.innerHTML = db.projects.map((p, idx) => `
+    <option value="${p.id}" ${idx === 0 ? 'selected' : ''}>${p.name}</option>
+  `).join('');
 
-    return `
-      <div class="spec-card">
-        <div class="spec-info">
-          <div class="spec-title">${title} <span style="font-size:11px; background:#f1f3f5; padding:2px 6px; border-radius:4px; margin-left:6px; color:#555;">${type}</span></div>
-          <div class="spec-desc">${desc}</div>
-        </div>
-        <div style="display:flex; align-items:center;">
-          <div class="spec-rate">${rate > 0 ? rate.toLocaleString() : '-'} ${unit}</div>
-          <button class="btn btn-primary" onclick="selectSpecByIndex(${i})" style="padding:6px 14px; font-size:12px;">이 값 사용</button>
-        </div>
-      </div>
+  currentProjectId = sel.value;
+  renderQuantityList();
+}
+
+function switchProject(pid) {
+  currentProjectId = pid;
+  renderQuantityList();
+}
+
+// 공종 대분류 변경 시 세부 품목 드롭다운 동적 생성
+function initCategoryDropdown() {
+  const categories = [...new Set(catalogList.map(item => item.cat || item.category || '기타'))];
+  const catSel = document.getElementById('sel-category');
+  catSel.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  onCategoryChange(catSel.value);
+}
+
+function onCategoryChange(cat) {
+  const itemSel = document.getElementById('sel-item');
+  const filtered = catalogList.filter(item => (item.cat || item.category) === cat);
+
+  itemSel.innerHTML = filtered.map(item => `
+    <option value="${item.name}">${item.name}</option>
+  `).join('');
+
+  if (filtered.length) {
+    onItemChange(filtered[0].name);
+  }
+}
+
+// 세부 품목 선택 시 일일작업량과 단위 자동 꽂기
+function onItemChange(itemName) {
+  const target = catalogList.find(item => item.name === itemName);
+  if (!target) return;
+
+  const rate = target.rate || target.dailyRate || 0;
+  const unit = target.unit || 'm³';
+
+  document.getElementById('inp-daily-rate').value = rate;
+  document.getElementById('txt-unit').textContent = unit;
+  document.getElementById('txt-unit-total').textContent = unit;
+  document.getElementById('selection-guide').innerHTML = `
+    <strong>[${target.cat || target.category}] ${target.name}</strong> — 일일 표준작업량: <strong>${rate} ${unit}</strong> (${target.desc || '표준 품셈 적용'})
+  `;
+
+  calculateDays();
+}
+
+// 상단 추천 카드 값 사용 클릭
+function applyFeatured() {
+  document.getElementById('sel-category').value = '토공사';
+  onCategoryChange('토공사');
+  document.getElementById('sel-item').value = '관로 터파기 (인력/토사)';
+  onItemChange('관로 터파기 (인력/토사)');
+}
+
+// 일수 자동 계산 안내
+function calculateDays() {
+  const rate = parseFloat(document.getElementById('inp-daily-rate').value) || 0;
+  const qty = parseFloat(document.getElementById('inp-total-qty').value) || 0;
+
+  if (rate > 0 && qty > 0) {
+    const days = Math.ceil(qty / rate);
+    document.getElementById('selection-guide').innerHTML += ` &nbsp;|&nbsp; <strong>소요 작업일수: ${days}일</strong>`;
+  }
+}
+
+// 공정표 연동 추가
+function addQuantityItem() {
+  const db = loadDB();
+  const itemName = document.getElementById('sel-item').value;
+  const target = catalogList.find(i => i.name === itemName);
+  const rate = parseFloat(document.getElementById('inp-daily-rate').value) || 0;
+  const qty = parseFloat(document.getElementById('inp-total-qty').value) || 0;
+
+  if (!currentProjectId) {
+    alert('작업을 등록할 현장을 먼저 선택하세요.');
+    return;
+  }
+  if (!qty || qty <= 0) {
+    alert('총 물량을 0보다 크게 입력해 주세요.');
+    return;
+  }
+
+  const days = Math.ceil(qty / rate);
+  const newItem = {
+    id: 'Q_' + Date.now(),
+    projectId: currentProjectId,
+    category: target ? (target.cat || target.category) : '토공사',
+    name: itemName,
+    dailyRate: rate,
+    quantity: qty,
+    unit: target ? target.unit : 'm³',
+    workDays: days,
+    period: `등록 즉시 (${days}일간)`
+  };
+
+  if (!db.quantities) db.quantities = [];
+  db.quantities.push(newItem);
+  saveDB(db);
+
+  document.getElementById('inp-total-qty').value = '';
+  renderQuantityList();
+  alert(`'${itemName}' 물량이 저장되었습니다. (산정 공기: ${days}일)`);
+}
+
+// 테이블 렌더링
+function renderQuantityList() {
+  const db = loadDB();
+  const tbody = document.getElementById('tbl-quantities');
+  const list = (db.quantities || []).filter(q => q.projectId === currentProjectId);
+
+  if (!list.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">
+          현재 선택된 현장에 등록된 물량 산정 내역이 없습니다.
+        </td>
+      </tr>
     `;
-  }).join('');
-}
-
-function selectSpecByIndex(idx) {
-  const item = currentDisplayList[idx];
-  if (!item) return;
-
-  const title = item.name || '';
-  const type = item.category || '토공사';
-  const rate = Number(item.amount) || 0;
-  const unit = item.unit || 'm³';
-
-  document.getElementById('formWorkType').value = type;
-  document.getElementById('formItemSpec').value = title;
-  document.getElementById('formDailyRate').value = rate;
-  document.getElementById('selected-spec-banner').innerHTML = `선택된 표준 규격: <strong>[${title}]</strong> (일일 표준작업량: <strong>${rate.toLocaleString()} ${unit}/일</strong>)`;
-
-  document.getElementById('formTotalQty').focus();
-}
-
-function filterCatalog() {
-  const q = document.getElementById('catalogSearch').value.trim().toLowerCase();
-  if (!q) {
-    renderCatalog(rawCatalog, false);
-    return;
-  }
-  const filtered = rawCatalog.filter(c => {
-    const str = `${c.name || ''} ${c.category || ''} ${c.condition || ''} ${c.basis || ''}`.toLowerCase();
-    return str.includes(q);
-  });
-  renderCatalog(filtered, true);
-}
-
-function calculateAndSave() {
-  const db = loadDB();
-  const pid = getCurrentProjectId(db);
-  const workType = document.getElementById('formWorkType').value.trim() || '토공사';
-  const itemSpec = document.getElementById('formItemSpec').value.trim();
-  const dailyRate = parseFloat(document.getElementById('formDailyRate').value);
-  const totalQty = parseFloat(document.getElementById('formTotalQty').value);
-
-  if (!itemSpec || !dailyRate || !totalQty || totalQty <= 0) {
-    alert("품목 규격, 일일작업량, 총 물량을 올바르게 입력해 주세요.");
     return;
   }
 
-  const calcDays = Math.max(1, Math.ceil(totalQty / dailyRate));
-
-  let allTasks = JSON.parse(localStorage.getItem('my_project_tasks_map') || '{}');
-  if (!allTasks[pid]) allTasks[pid] = [];
-
-  const project = db.projects.find(x => x.id === pid) || db.projects[0];
-  let startDate = project ? project.startDate : "2026-01-05";
-
-  if (allTasks[pid].length > 0) {
-    const lastTask = allTasks[pid][allTasks[pid].length - 1];
-    const nextStart = new Date(new Date(lastTask.end).getTime() + 86400000);
-    startDate = nextStart.toISOString().slice(0, 10);
-  }
-
-  const endDate = new Date(new Date(startDate).getTime() + (calcDays - 1) * 86400000).toISOString().slice(0, 10);
-
-  allTasks[pid].push({
-    id: Date.now(),
-    name: `${workType} - ${itemSpec}`,
-    rate: dailyRate,
-    qty: totalQty,
-    days: calcDays,
-    start: startDate,
-    end: endDate,
-    progress: 0
-  });
-
-  localStorage.setItem('my_project_tasks_map', JSON.stringify(allTasks));
-  alert(`[${itemSpec}] 작업일수 ${calcDays}일이 등록되었습니다.`);
-  
-  document.getElementById('formTotalQty').value = '';
-  renderCurrentTasks();
-}
-
-function deleteTask(id) {
-  const db = loadDB();
-  const pid = getCurrentProjectId(db);
-  let allTasks = JSON.parse(localStorage.getItem('my_project_tasks_map') || '{}');
-  if (allTasks[pid]) {
-    allTasks[pid] = allTasks[pid].filter(t => t.id !== id);
-    localStorage.setItem('my_project_tasks_map', JSON.stringify(allTasks));
-    renderCurrentTasks();
-  }
-}
-
-function renderCurrentTasks() {
-  const db = loadDB();
-  const pid = getCurrentProjectId(db);
-  const allTasks = JSON.parse(localStorage.getItem('my_project_tasks_map') || '{}');
-  const tasks = allTasks[pid] || [];
-  const tbody = document.getElementById('current-task-rows');
-
-  if (!tasks.length) {
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty">현재 선택된 현장에 등록된 물량 산정 내역이 없습니다.</div></td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = tasks.map(t => `
+  tbody.innerHTML = list.map(q => `
     <tr>
-      <td><strong>${t.name}</strong></td>
-      <td class="num mono">${(t.rate || 0).toLocaleString()}</td>
-      <td class="num mono"><strong>${(t.qty || 0).toLocaleString()}</strong></td>
-      <td class="num mono" style="color:#2563eb; font-weight:bold;">${t.days}일</td>
-      <td class="mono" style="font-size:12px;">${t.start} ~ ${t.end}</td>
-      <td><button class="btn btn-sm" onclick="deleteTask(${t.id})" style="border:1px solid #fca5a5; color:#dc2626; background:#fff;">삭제</button></td>
+      <td>
+        <span class="badge" style="background:#f1f5f9; color:#475569; margin-right:6px;">${q.category}</span>
+        <strong>${q.name}</strong>
+      </td>
+      <td class="num mono">${q.dailyRate} ${q.unit}/일</td>
+      <td class="num mono font-bold">${q.quantity.toLocaleString()} ${q.unit}</td>
+      <td class="num mono" style="color:var(--primary); font-weight:700;">${q.workDays} 일</td>
+      <td class="muted" style="font-size:12.5px;">${q.period || '-'}</td>
+      <td style="text-align:center;">
+        <button class="btn btn-sm" style="color:#ef4444; border-color:#fca5a5; padding:2px 8px; font-size:12px;" onclick="deleteQuantityItem('${q.id}')">삭제</button>
+      </td>
     </tr>
   `).join('');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  // 사이드바 및 상단바 확실하게 렌더링
-  if (typeof renderSidebar === 'function') renderSidebar();
-  if (typeof renderTopbar === 'function') renderTopbar('공사 물량·생산성 산정', { showProjectSelect: true });
-
-  renderCatalog(rawCatalog, false);
-  renderCurrentTasks();
-
-  const sel = document.getElementById('topbar-project-select');
-  if (sel) {
-    sel.addEventListener('change', () => {
-      renderCurrentTasks();
-    });
-  }
-});
+function deleteQuantityItem(id) {
+  if (!confirm('해당 물량 산정 내역을 삭제하시겠습니까?')) return;
+  const db = loadDB();
+  db.quantities = (db.quantities || []).filter(q => q.id !== id);
+  saveDB(db);
+  renderQuantityList();
+}
 </script>
 </body>
 </html>
