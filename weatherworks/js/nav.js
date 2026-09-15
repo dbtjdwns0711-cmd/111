@@ -19,7 +19,7 @@ function renderSidebar() {
     { id: 'quality.html', label: '기상데이터 품질관리' },
     { id: 'schedule.html', label: '공정표 Import' },
     { id: 'data.html', label: '데이터 관리' },
-    { id: 'index.html', label: '공종·기준·표준작업량' },
+    { id: 'index.html', label: '공종·기준·표준작업량' }
   ];
 
   let h = `
@@ -28,24 +28,39 @@ function renderSidebar() {
       <h1>WeatherWorks</h1>
       <p>건설공사 비작업일수 · 공사기간 산정</p>
     </div>
-    <ul class="nav">
+    <div class="nav">
   `;
+
+  let inGroup = false;
 
   for (const m of menu) {
     if (m.section) {
-      h += `<li class="nav-section">${m.section}</li>`;
+      if (inGroup) {
+        h += `</div>`;
+      }
+      if (m.section === '현장') {
+        h += `<div class="nav-group-plain">`;
+      } else {
+        h += `<div class="nav-group"><div class="nav-group-title">${m.section}</div>`;
+      }
+      inGroup = true;
     } else {
-      const active = (cur === m.id) ? 'active' : '';
-      h += `<li><a href="${m.id}" class="${active}">${m.label}</a></li>`;
+      const active = (cur === m.id) ? ' active' : '';
+      h += `<a href="${m.id}" class="nav-link${active}">${m.label}</a>`;
     }
   }
 
+  if (inGroup) {
+    h += `</div>`;
+  }
+
   h += `
-    </ul>
-    <div style="margin-top:auto; padding:12px 14px; font-size:11px; color:#8896A6; border-top:1px solid rgba(255,255,255,0.06);">
+    </div>
+    <div style="margin-top:auto; padding:16px 20px; font-size:11px; color:#8896A6; border-top:1px solid rgba(255,255,255,0.06); line-height:1.5;">
       예상값이며 실제 작업 여부는 현장 상황 및 공식 기상정보에 따라 달라질 수 있습니다.
     </div>
   `;
+
   sb.innerHTML = h;
 }
 
@@ -56,12 +71,12 @@ function renderTopbar(title, opts = {}) {
   let h = `<div class="title">${title}</div>`;
 
   if (opts.showProjectSelect) {
-    const db = loadDB();
-    const curId = getCurrentProjectId(db);
+    const db = (typeof loadDB === 'function') ? loadDB() : { projects: [] };
+    const curId = (typeof getCurrentProjectId === 'function') ? getCurrentProjectId(db) : '';
     h += `<div class="row gap-8" style="align-items:center;">
       <span class="muted" style="font-size:12px;">현장:</span>
       <select id="sel-current-project" onchange="setCurrentProjectId(this.value); location.reload();">`;
-    for (const p of db.projects) {
+    for (const p of (db.projects || [])) {
       const sel = p.id === curId ? 'selected' : '';
       h += `<option value="${p.id}" ${sel}>${p.name}</option>`;
     }
