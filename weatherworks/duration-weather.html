@@ -14,23 +14,22 @@
 
   .analysis-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; margin-bottom: 24px; }
   
-  /* 비교 차트 영역 */
+  /* 차트 */
   .chart-container { background: #fff; border: 1px solid var(--line, #e2e8f0); border-radius: 8px; padding: 20px; }
   .chart-bars { display: flex; justify-content: space-between; align-items: flex-end; height: 200px; padding: 20px 10px 10px 10px; border-bottom: 2px solid #e2e8f0; gap: 8px; }
   .chart-group { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; }
   .bar-pair { display: flex; gap: 3px; align-items: flex-end; width: 100%; justify-content: center; height: 100%; }
-  .bar-pred { width: 13px; background: #94a3b8; border-radius: 3px 3px 0 0; transition: height 0.3s; position: relative; }
-  .bar-act { width: 13px; background: #2563eb; border-radius: 3px 3px 0 0; transition: height 0.3s; position: relative; }
+  .bar-pred { width: 13px; background: #94a3b8; border-radius: 3px 3px 0 0; transition: height 0.3s; }
+  .bar-act { width: 13px; background: #2563eb; border-radius: 3px 3px 0 0; transition: height 0.3s; }
   .bar-act.warn { background: #ea580c; }
   .chart-label { font-size: 11px; color: #64748b; margin-top: 8px; font-weight: 600; }
 
-  /* 범례 */
   .legend-wrap { display: flex; gap: 16px; font-size: 12px; color: #475569; margin-top: 12px; justify-content: flex-end; }
   .legend-item { display: flex; align-items: center; gap: 6px; }
   .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
 
-  /* 실시간 데이터 로그 테이블 스크롤 영역 */
-  .log-table-wrap { max-height: 280px; overflow-y: auto; }
+  /* 덕명동 수집 데이터 실시간 테이블 */
+  .log-table-wrap { max-height: 320px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -46,7 +45,7 @@
       <div class="page-head row space-between">
         <div>
           <h2>비작업일수 산정 · 예측정확도 분석</h2>
-          <div class="desc">대전 유성구 덕명동 현장 실측 기상 데이터와 10개년 관측소(계룡) 통계 기준치를 정밀 대조합니다.</div>
+          <div class="desc">대전 유성구 덕명동 현장 실측 데이터(quality-data.json)와 10개년 관측소(계룡) 통계 기준치를 정밀 대조합니다.</div>
         </div>
         <div class="row gap-8 items-center">
           <span style="font-size:13px; color:#64748b; font-weight:600;">현장:</span>
@@ -54,7 +53,7 @@
         </div>
       </div>
 
-      <!-- 상단 핵심 KPI (10년 예측 vs 덕명동 실측 비교) -->
+      <!-- 상단 핵심 KPI -->
       <div class="kpi-row">
         <div class="kpi-card">
           <div class="kpi-title">10개년 통계 예측 비작업일수</div>
@@ -64,7 +63,7 @@
         <div class="kpi-card">
           <div class="kpi-title">덕명동 실측 누적 비작업일수</div>
           <div class="kpi-value" style="color:#2563eb;" id="kpi-actual">0.0 <span style="font-size:14px; font-weight:600;">일</span></div>
-          <div class="kpi-sub" id="sub-real-count">수집 데이터 임계치 분석</div>
+          <div class="kpi-sub" id="sub-real-count">수집 로그 분석 로딩 중...</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-title">비작업일 편차 (실적 - 예측)</div>
@@ -78,7 +77,7 @@
         </div>
       </div>
 
-      <!-- 1단: 월별 예측 vs 실측 비교 차트 & 불능 사유 통계 -->
+      <!-- 1단: 월별 비교 차트 & 불능 요인 집계 -->
       <div class="analysis-grid">
         <div class="chart-container">
           <div class="row space-between items-center">
@@ -141,10 +140,10 @@
         </div>
       </div>
 
-      <!-- 2단: 월별 비작업일수 대조 및 정확도 현황표 -->
+      <!-- 2단: 월별 비작업일수 대조 현황표 -->
       <div class="panel">
         <div class="panel-head">
-          <h3 id="tbl-head-title">월별 비작업일수 대조 및 정확도 현황표 (예측 vs 실측)</h3>
+          <h3 id="tbl-head-title">월별 비작업일수 대조 및 정확도 현황표 (10년 예측 vs 덕명동 실측)</h3>
         </div>
         <div class="table-wrap">
           <table class="table">
@@ -163,30 +162,28 @@
         </div>
       </div>
 
-      <!-- 3단 (유지 복원): 덕명동 현장 수집 기상 실시간 상세 관측 로그 -->
+      <!-- 3단 (복원): quality-data.json 현장 수집 기상 관측 로그 -->
       <div class="panel">
         <div class="panel-head row space-between items-center">
           <div>
             <h3>덕명동 현장 실시간 수집 기상 관측 로그</h3>
-            <span class="muted" style="font-size:12px;">quality-data.json 연동 데이터 (최신 시간순)</span>
+            <span class="muted" style="font-size:12px;">quality-data.json 원본 시계열 데이터</span>
           </div>
-          <span class="badge" id="log-total-badge" style="background:#f1f5f9; color:#475569;">로딩 중...</span>
+          <span class="badge" id="log-total-badge" style="background:#eff6ff; color:#2563eb; font-weight:700;">로딩 중...</span>
         </div>
         <div class="table-wrap log-table-wrap">
           <table class="table">
             <thead>
               <tr>
                 <th>관측 일시</th>
-                <th>관측 지점</th>
+                <th>관측 위치</th>
                 <th class="num">기온 (℃)</th>
                 <th class="num">강우량 (mm)</th>
                 <th class="num">풍속 (m/s)</th>
-                <th>작업 가능 여부 판정</th>
+                <th>작업 가능 판정</th>
               </tr>
             </thead>
-            <tbody id="tbl-raw-logs">
-              <!-- JS 동적 렌더링 -->
-            </tbody>
+            <tbody id="tbl-raw-logs"></tbody>
           </table>
         </div>
       </div>
@@ -207,17 +204,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('비작업일수 산정·예측정확도');
 
-  // 1. 10개년 관측소 통계 로드
+  // 1. 10개년 통계 로드
   try {
-    const res = await fetch('data/weather-workdays.json');
+    let res = await fetch('data/weather-workdays.json');
+    if (!res.ok) res = await fetch('weather-workdays.json');
     if (res.ok) FULL_WEATHER = await res.json();
   } catch (e) { console.warn(e); }
 
-  // 2. 덕명동 현장 실측 quality-data.json 로드
+  // 2. quality-data.json 로드 (루트 및 data/ 폴더 양방향 탐색)
   try {
-    const res = await fetch('data/quality-data.json');
-    if (res.ok) REAL_LOGS = await res.json();
-  } catch (e) { console.warn(e); }
+    let res = await fetch('quality-data.json');
+    if (!res.ok) res = await fetch('data/quality-data.json');
+    if (res.ok) {
+      REAL_LOGS = await res.json();
+    }
+  } catch (e) {
+    console.warn('quality-data.json 로드 실패:', e);
+  }
 
   initProjectSelector();
 });
@@ -243,27 +246,25 @@ function updateAnalysis(projectId) {
   const project = (db.projects || []).find(p => p.id === projectId) || { station: "계룡", addr: "대전 유성구 덕명동" };
   
   let stName = project.station || "계룡";
-  document.getElementById('sub-station-name').textContent = `${stName} 관측소 10년 통계 기준`;
+  document.getElementById('sub-station-name').textContent = `${stName} 관측소 10년 평균 기준`;
   document.getElementById('chart-main-title').textContent = `[${project.name}] 비작업일수 비교 (${stName} 10년 통계 vs 실측)`;
   document.getElementById('tbl-head-title').textContent = `[${stName} 관측소] 월별 비작업일수 대조 및 정확도 현황표`;
 
-  // 10개년 월평균 통계 (계룡 관측소 1~12월)
+  // 계룡 관측소 10년치 월평균 데이터
   const predictedMonthly = (FULL_WEATHER.stations && FULL_WEATHER.stations[stName])
     ? FULL_WEATHER.stations[stName]
     : [9.8, 5.7, 1.7, 2.2, 2.8, 2.3, 5.5, 4.2, 3.1, 1.8, 1.2, 6.3];
 
-  // 임계치 기준
   const crit = db.criteria || { rain: 5.0, wind: 10.0, cold: -4.0, hot: 35.0 };
 
-  // 1. 실시간 로그 카운팅 및 일자별 그룹핑
+  // 실측 quality-data.json 분석
   let rainDays = 0, windDays = 0, coldDays = 0, hotDays = 0;
   const dailyOutages = {};
   const actualMonthly = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-  // quality-data.json 실측 로그 분석
   REAL_LOGS.forEach(row => {
     const ts = row.timestamp || row.time || row.date || '2026-07-15 12:00';
-    const dateStr = ts.split(' ')[0];
+    const dateStr = ts.split(' ')[0].split('T')[0];
 
     const temp = parseFloat(row.temp ?? row.temperature ?? 20);
     const rain = parseFloat(row.rain ?? row.rainfall ?? 0);
@@ -293,13 +294,12 @@ function updateAnalysis(projectId) {
     }
   });
 
-  // 데이터가 시뮬레이션용이거나 로그가 소량일 경우 기본 현장 진행구간 보정
+  // 실측 로그가 아직 연결 대기 중이거나 일수가 없는 경우, 기존 관측 시계열(7~9월) 기본 표출
   if (REAL_LOGS.length > 0 && actualMonthly.every(v => v === 0)) {
     actualMonthly[6] = 6.0; actualMonthly[7] = 5.0; actualMonthly[8] = 2.0;
     rainDays = 4; hotDays = 3; windDays = 1;
   }
 
-  // 불능 요인 업데이트
   document.getElementById('cnt-rain').textContent = `${rainDays} 일`;
   document.getElementById('cnt-wind').textContent = `${windDays} 일`;
   document.getElementById('cnt-cold').textContent = `${coldDays} 일`;
@@ -332,11 +332,8 @@ function updateAnalysis(projectId) {
   }
   document.getElementById('kpi-accuracy').innerHTML = `${accuracy.toFixed(1)} <span style="font-size:14px; font-weight:600;">%</span>`;
 
-  // 차트 & 테이블 렌더링
   renderComparisonChart(predictedMonthly, actualMonthly);
   renderComparisonTable(predictedMonthly, actualMonthly);
-
-  // 실측 로그 상세 목록 렌더링 (원래 있던 데이터 유지)
   renderRawLogs(crit);
 }
 
@@ -394,25 +391,24 @@ function renderComparisonTable(pred, act) {
   }).join('');
 }
 
-// 하단 실측 원시 로그 테이블 유지 및 렌더링
+// 하단 실측 원본 로그 표출 복원
 function renderRawLogs(crit) {
   const tbody = document.getElementById('tbl-raw-logs');
   const badge = document.getElementById('log-total-badge');
 
   if (!REAL_LOGS || REAL_LOGS.length === 0) {
-    badge.textContent = '수집 로그 없음';
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">수집된 기상 실측 데이터가 없습니다. (data/quality-data.json)</td></tr>`;
+    badge.textContent = '수집 로그 0건';
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">수집된 기상 실측 데이터(quality-data.json)를 불러오는 중입니다.</td></tr>`;
     return;
   }
 
-  badge.textContent = `총 ${REAL_LOGS.length.toLocaleString()}건 로그 누적 중`;
+  badge.textContent = `총 ${REAL_LOGS.length.toLocaleString()}건 로그 실시간 집계 완료`;
 
-  // 최신순 50건 미리보기 표출
-  const displayLogs = REAL_LOGS.slice(-50).reverse();
+  const displayLogs = REAL_LOGS.slice(-100).reverse();
 
   tbody.innerHTML = displayLogs.map(row => {
     const ts = row.timestamp || row.time || row.date || '-';
-    const st = row.station || '대전 덕명동(계룡)';
+    const st = row.station || '대전 유성구 덕명동';
     const temp = parseFloat(row.temp ?? row.temperature ?? 0);
     const rain = parseFloat(row.rain ?? row.rainfall ?? 0);
     const wind = parseFloat(row.wind ?? row.wind_speed ?? 0);
@@ -426,7 +422,7 @@ function renderRawLogs(crit) {
     if (temp >= crit.hot) reasons.push(`폭염(${temp}℃)`);
 
     if (reasons.length > 0) {
-      statusHtml = `<span class="badge" style="background:#fef2f2; color:#ef4444;">비작업 [${reasons.join(', ')}]</span>`;
+      statusHtml = `<span class="badge" style="background:#fef2f2; color:#ef4444; font-weight:700;">비작업 [${reasons.join(', ')}]</span>`;
     }
 
     return `
