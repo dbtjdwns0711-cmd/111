@@ -77,6 +77,7 @@
 
 <script src="js/db.js"></script>
 <script src="js/seed.js"></script>
+<!-- 전국 4,418개 관측지점 데이터 -->
 <script src="js/stations-data.js"></script>
 <script src="js/util.js"></script>
 <script src="js/calc.js"></script>
@@ -91,49 +92,28 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('구간별 관측지점');
 
-  loadFromStationsDataScript();
+  loadStationMappingData();
 });
 
-// stations-data.js 파일에서 선언된 전역 데이터 변수를 탐색하여 로드
-function loadFromStationsDataScript() {
+function loadStationMappingData() {
+  // stations-data.js 의 실제 선언 변수 stationMappingData 직접 바인딩
   let source = null;
-
-  // stations-data.js에 정의되어 있을 수 있는 다양한 전역 변수명 자동 매칭
-  if (typeof STATIONS_DATA !== 'undefined') source = STATIONS_DATA;
-  else if (typeof STATIONS !== 'undefined') source = STATIONS;
-  else if (typeof ADDRESS_STATION_MAP !== 'undefined') source = ADDRESS_STATION_MAP;
-  else if (typeof STATION_MAPPING !== 'undefined') source = STATION_MAPPING;
-  else if (typeof stationData !== 'undefined') source = stationData;
-
-  if (source) {
-    if (Array.isArray(source)) {
-      RAW_STATIONS_MAP = source.map(item => ({
-        address: item.address || item.addr || item.전체주소명 || item.a || '-',
-        code: item.code || item.매핑지점코드 || item.c || '-',
-        stationName: item.stationName || item.station || item.매핑지점명 || item.s || '-',
-        stationAddr: item.stationAddr || item.관측소주소 || item.sa || (item.stationName || item.s || '') + ' 관측소 관할',
-        dist: parseFloat(item.dist || item['직선거리(km)'] || item.d || 0)
-      }));
-    } else if (typeof source === 'object') {
-      RAW_STATIONS_MAP = Object.entries(source).map(([addr, info]) => ({
-        address: addr,
-        code: info.code || info.c || info.매핑지점코드 || '-',
-        stationName: info.stationName || info.station || info.s || info.매핑지점명 || '-',
-        stationAddr: info.stationAddr || info.sa || info.관측소주소 || (info.station || info.s || '') + ' 관측소 관할',
-        dist: parseFloat(info.dist || info.d || info['직선거리(km)'] || 0)
-      }));
-    }
+  if (typeof stationMappingData !== 'undefined') {
+    source = stationMappingData;
+  } else if (typeof STATIONS_DATA !== 'undefined') {
+    source = STATIONS_DATA;
+  } else if (typeof stationsData !== 'undefined') {
+    source = stationsData;
   }
 
-  // 폴백: 변수가 잡히지 않을 경우의 기본 덕명동/배방읍 데이터
-  if (!RAW_STATIONS_MAP.length) {
-    RAW_STATIONS_MAP = [
-      { address: "대전광역시 유성구 덕명동", code: 636, stationName: "계룡", stationAddr: "충청남도 계룡시 신도안면 부남리", dist: 5.69 },
-      { address: "충청남도 아산시 배방읍", code: 493, stationName: "송악", stationAddr: "충청남도 아산시 송악면 역촌리", dist: 5.74 },
-      { address: "충청남도 아산시 온양동", code: 637, stationName: "아산", stationAddr: "충청남도 아산시 배방읍 희망로", dist: 3.20 },
-      { address: "대전광역시 대덕구 장동", code: 648, stationName: "장동", stationAddr: "대전광역시 대덕구 장동", dist: 1.22 },
-      { address: "대전광역시 동구 세천동", code: 643, stationName: "세천", stationAddr: "대전광역시 동구 세천동", dist: 1.87 }
-    ];
+  if (source && Array.isArray(source)) {
+    RAW_STATIONS_MAP = source.map(item => ({
+      address: item.address || item.addr || item.전체주소명 || '-',
+      code: item.code || item.매핑지점코드 || '-',
+      stationName: item.stationName || item.station || item.매핑지점명 || '-',
+      stationAddr: item.stationAddr || item.관측소주소 || ((item.stationName || item.station || item.매핑지점명 || '') + ' 관측소 관할 구역'),
+      dist: parseFloat(item.dist || item['직선거리(km)'] || 0)
+    }));
   }
 
   FILTERED_STATIONS = [...RAW_STATIONS_MAP];
