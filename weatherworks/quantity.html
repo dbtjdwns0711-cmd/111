@@ -14,8 +14,8 @@
   .input-grid { display: grid; grid-template-columns: 140px 1fr 140px 160px auto; gap: 12px; align-items: flex-end; }
   .input-group { display: flex; flex-direction: column; gap: 6px; }
   .input-group label { font-size: 12px; font-weight: 600; color: #64748b; }
-  .input-group select, .input-group input { height: 38px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13.5px; background: #fff; width: 100%; box-sizing: border-box; }
-  .input-group input:read-only { background: #f8fafc; color: #1e293b; font-weight: 600; }
+  .input-group select, .input-group input { height: 38px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; width: 100%; box-sizing: border-box; }
+  .input-group input:read-only { background: #f8fafc; color: #1e293b; font-weight: 700; }
   .guide-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #1e40af; }
 </style>
 </head>
@@ -61,15 +61,15 @@
         </div>
       </div>
 
-      <!-- 물량 추가 및 소요 공기 산출 (드롭다운 목록상자) -->
+      <!-- 물량 추가 및 소요 공기 산출 -->
       <div class="panel">
         <div class="panel-head row space-between">
           <h3>물량 추가 및 소요 공기 산출</h3>
-          <span class="muted" style="font-size:12px;" id="catalog-count-badge">표준품셈 카탈로그 로딩 중...</span>
+          <span class="muted" style="font-size:12px;" id="catalog-count-badge">표준품셈 로딩 중...</span>
         </div>
 
         <div class="guide-box" id="selection-guide">
-          선택된 표준 규격: <strong>[관로 터파기 (인력)]</strong> (일일 표준작업량: <strong>12 m³/일</strong>)
+          품목을 선택하면 일일작업량이 자동으로 반영됩니다.
         </div>
 
         <div class="input-grid">
@@ -87,7 +87,7 @@
           </div>
           <div class="input-group">
             <label>일일작업량</label>
-            <input type="number" id="inp-daily-rate" value="12" readonly>
+            <input type="number" id="inp-daily-rate" value="0" readonly>
           </div>
           <div class="input-group">
             <label>총 물량</label>
@@ -141,55 +141,37 @@ document.addEventListener('DOMContentLoaded', () => {
   initProjectSelector();
   initCategoryDropdown();
 
-  // 기본값 세팅
+  // 첫 진입 시 기본값 세팅
   applyFeatured();
 });
 
-// sw-catalog.js의 다양한 변수명 및 키 구조 전수 대응
+// sw-catalog.js 원본 키값(amount, condition, basis, id) 정확히 매핑
 function loadCatalogData() {
-  let raw = null;
+  const raw = (typeof SW_CATALOG !== 'undefined') ? SW_CATALOG : [];
 
-  if (typeof SW_CATALOG !== 'undefined') raw = SW_CATALOG;
-  else if (typeof CATALOG !== 'undefined') raw = CATALOG;
-  else if (typeof STANDARD_WORK_CATALOG !== 'undefined') raw = STANDARD_WORK_CATALOG;
-  else if (typeof swCatalog !== 'undefined') raw = swCatalog;
-  else if (window.SW_CATALOG) raw = window.SW_CATALOG;
-  else if (window.CATALOG) raw = window.CATALOG;
+  catalogList = raw.map((item, idx) => {
+    // 세부 조건(condition)에서 첫 줄 요약 발췌
+    let condSummary = "";
+    if (item.condition) {
+      const parts = item.condition.split('\\n')[0].split('\n')[0];
+      condSummary = parts.replace(/^[•\s\.\-]+/, '').trim();
+      if (condSummary.length > 25) condSummary = condSummary.substring(0, 25) + '...';
+    }
 
-  if (Array.isArray(raw) && raw.length > 0) {
-    catalogList = raw.map((item, idx) => {
-      // 1. 공종 키 매핑
-      const category = item.category || item.cat || item.work_type || item.workType || item.major || '기타공사';
-      
-      // 2. 품목명 규격 키 매핑
-      const name = item.name || item.item_name || item.itemName || item.title || item.spec || `품목_${idx+1}`;
-      
-      // 3. 일일작업량 수치 매핑 (daily_output, dailyOutput, rate, output, productivity 등)
-      let rateVal = item.daily_output ?? item.dailyOutput ?? item.rate ?? item.output ?? item.productivity ?? item.work_rate ?? item.daily_work;
-      let rate = parseFloat(rateVal);
-      if (isNaN(rate) || rate <= 0) {
-        // 혹시 규격 안에 수치가 적혀있는 경우 폴백
-        rate = 1;
-      }
+    const displayName = condSummary ? `${item.name} [${condSummary}]` : item.name;
 
-      // 4. 단위 매핑
-      const unit = item.unit || item.unit_name || item.standard_unit || 'm³';
+    return {
+      id: item.id || `swc-${idx}`,
+      category: (item.category || '토공사').trim(),
+      name: item.name.trim(),
+      displayName: displayName,
+      rate: Number(item.amount || item.rate || 0), // sw-catalog.js의 amount 키값 적용!
+      unit: (item.unit || 'm³').trim(),
+      condition: item.condition || '',
+      basis: item.basis || ''
+    };
+  });
 
-      // 5. 설명
-      const desc = item.desc || item.description || item.note || '';
-
-      return {
-        id: item.id || `C_${idx}`,
-        category: String(category).trim(),
-        name: String(name).trim(),
-        rate: rate,
-        unit: String(unit).trim(),
-        desc: desc
-      };
-    });
-  }
-
-  // 데이터 로드 확인 뱃지
   const badge = document.getElementById('catalog-count-badge');
   if (badge) {
     badge.textContent = `표준품셈 총 ${catalogList.length.toLocaleString()}개 품목 로드됨`;
@@ -217,7 +199,7 @@ function switchProject(pid) {
   renderQuantityList();
 }
 
-// 대분류 드롭다운 채우기
+// 대분류 드롭다운 초기화
 function initCategoryDropdown() {
   const catSel = document.getElementById('sel-category');
   if (!catalogList.length) return;
@@ -225,7 +207,6 @@ function initCategoryDropdown() {
   const categories = [...new Set(catalogList.map(c => c.category))];
   catSel.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
 
-  // '토공사'가 있으면 우선 선택, 없으면 첫번째
   if (categories.includes('토공사')) {
     catSel.value = '토공사';
   } else {
@@ -235,7 +216,7 @@ function initCategoryDropdown() {
   onCategoryChange(catSel.value);
 }
 
-// 대분류 변경 시 세부 품목 목록상자 갱신
+// 대분류 변경 시 세부 품목 갱신
 function onCategoryChange(cat) {
   const itemSel = document.getElementById('sel-item');
   const countSpan = document.getElementById('item-count-text');
@@ -244,22 +225,21 @@ function onCategoryChange(cat) {
   if (countSpan) countSpan.textContent = filtered.length;
 
   itemSel.innerHTML = filtered.map(item => `
-    <option value="${encodeURIComponent(item.name)}">${item.name}</option>
+    <option value="${item.id}">${item.displayName}</option>
   `).join('');
 
   if (filtered.length > 0) {
-    onItemChange(encodeURIComponent(filtered[0].name));
+    onItemChange(filtered[0].id);
   }
 }
 
-// 세부 품목 규격 선택 시 일일작업량 자동 입력
-function onItemChange(encodedName) {
-  const realName = decodeURIComponent(encodedName);
-  const target = catalogList.find(c => c.name === realName);
+// 품목 선택 시 amount 값을 일일작업량에 즉시 바인딩!
+function onItemChange(itemId) {
+  const target = catalogList.find(c => c.id === itemId);
   if (!target) return;
 
   const rateInput = document.getElementById('inp-daily-rate');
-  rateInput.value = target.rate;
+  rateInput.value = target.rate; // 180, 65 등 amount 수치 입력
 
   document.getElementById('selection-guide').innerHTML = `
     선택된 표준 규격: <strong>[${target.name}]</strong> (일일 표준작업량: <strong>${target.rate} ${target.unit}/일</strong>)
@@ -270,19 +250,16 @@ function onItemChange(encodedName) {
 
 // 상단 [이 값 사용] 클릭
 function applyFeatured() {
-  const targetName = "관로 터파기 (인력)";
-  let target = catalogList.find(c => c.name.includes("관로 터파기") || c.name.includes("관로터파기") || c.name.includes(targetName));
+  // 관로 터파기 (인력)을 찾거나 기본 12 m³ 적용
+  let target = catalogList.find(c => c.name.includes("관로 터파기 (인력)") || c.name.includes("관로터파기 (인력)"));
 
   if (target) {
-    const catSel = document.getElementById('sel-category');
-    catSel.value = target.category;
+    document.getElementById('sel-category').value = target.category;
     onCategoryChange(target.category);
-
-    const itemSel = document.getElementById('sel-item');
-    itemSel.value = encodeURIComponent(target.name);
-    onItemChange(encodeURIComponent(target.name));
+    document.getElementById('sel-item').value = target.id;
+    onItemChange(target.id);
   } else {
-    // 폴백
+    // 카탈로그에 정확한 이름이 없더라도 12를 정확히 입력
     document.getElementById('inp-daily-rate').value = 12;
     document.getElementById('selection-guide').innerHTML = `
       선택된 표준 규격: <strong>[관로 터파기 (인력)]</strong> (일일 표준작업량: <strong>12 m³/일</strong>)
@@ -293,15 +270,15 @@ function applyFeatured() {
 function calculateDays() {
   const rate = parseFloat(document.getElementById('inp-daily-rate').value) || 0;
   const qty = parseFloat(document.getElementById('inp-total-qty').value) || 0;
-  const itemSel = document.getElementById('sel-item');
-  const realName = decodeURIComponent(itemSel.value);
-  const target = catalogList.find(c => c.name === realName);
+  const itemId = document.getElementById('sel-item').value;
+  const target = catalogList.find(c => c.id === itemId);
+  const name = target ? target.name : '관로 터파기 (인력)';
   const unit = target ? target.unit : 'm³';
 
   if (rate > 0 && qty > 0) {
     const days = Math.ceil(qty / rate);
     document.getElementById('selection-guide').innerHTML = `
-      선택된 표준 규격: <strong>[${realName}]</strong> (일일 표준작업량: <strong>${rate} ${unit}/일</strong>) &nbsp;|&nbsp; 
+      선택된 표준 규격: <strong>[${name}]</strong> (일일 표준작업량: <strong>${rate} ${unit}/일</strong>) &nbsp;|&nbsp; 
       총 물량: <strong>${qty} ${unit}</strong> &rarr; <span style="color:#1d4ed8; font-weight:700;">산정 공기: ${days}일</span>
     `;
   }
@@ -309,9 +286,8 @@ function calculateDays() {
 
 function addQuantityItem() {
   const db = loadDB();
-  const itemSel = document.getElementById('sel-item');
-  const realName = decodeURIComponent(itemSel.value);
-  const target = catalogList.find(c => c.name === realName);
+  const itemId = document.getElementById('sel-item').value;
+  const target = catalogList.find(c => c.id === itemId);
   const rate = parseFloat(document.getElementById('inp-daily-rate').value) || 0;
   const qty = parseFloat(document.getElementById('inp-total-qty').value) || 0;
 
@@ -325,12 +301,15 @@ function addQuantityItem() {
   }
 
   const days = Math.ceil(qty / rate);
+  const name = target ? target.name : '관로 터파기 (인력)';
   const unit = target ? target.unit : 'm³';
+  const category = target ? target.category : '토공사';
+
   const newItem = {
     id: 'Q_' + Date.now(),
     projectId: currentProjectId,
-    category: target ? target.category : '토공사',
-    name: realName,
+    category: category,
+    name: name,
     dailyRate: rate,
     quantity: qty,
     unit: unit,
@@ -344,7 +323,7 @@ function addQuantityItem() {
 
   document.getElementById('inp-total-qty').value = '';
   renderQuantityList();
-  alert(`'${realName}' (${qty} ${unit}) 공정 등록 완료 (소요 작업일수: ${days}일)`);
+  alert(`'${name}' (${qty} ${unit}) 공정 등록 완료 (소요 작업일수: ${days}일)`);
 }
 
 function renderQuantityList() {
