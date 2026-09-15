@@ -19,7 +19,7 @@ function renderSidebar() {
     { id: 'quality.html', label: '기상데이터 품질관리' },
     { id: 'schedule.html', label: '공정표 Import' },
     { id: 'data.html', label: '데이터 관리' },
-    { id: 'admin.html', label: '기상 판정 기준' },
+    { id: 'admin.html', label: '기상 판정 기준 · 공휴일' },
   ];
 
   let h = `
