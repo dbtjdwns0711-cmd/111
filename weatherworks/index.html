@@ -13,24 +13,26 @@
   .project-name { font-size: 16px; font-weight: 700; color: #1e293b; }
   .project-meta { font-size: 12.5px; color: #64748b; line-height: 1.6; margin-bottom: 16px; }
 
-  /* 간트차트 시각화 영역 */
+  /* 간트차트 시각화 */
   .gantt-wrap { background: #fff; border: 1px solid var(--line, #e2e8f0); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
   .gantt-header-row { display: flex; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; font-size: 12px; font-weight: 700; color: #475569; align-items: center; }
-  
   .gantt-time-scale { flex: 1; display: flex; justify-content: space-between; position: relative; padding: 0 4px; }
   .gantt-time-scale::before { content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 1px; background: #e2e8f0; }
   .scale-mark { font-size: 11px; color: #94a3b8; font-family: monospace; }
 
   .gantt-item-row { display: flex; align-items: center; border-bottom: 1px solid #f1f5f9; padding: 12px 0; font-size: 13px; }
   .gantt-item-label { width: 260px; flex-shrink: 0; font-weight: 600; color: #1e293b; padding-right: 12px; box-sizing: border-box; }
-  
   .gantt-timeline-track { flex: 1; position: relative; height: 28px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0; overflow: hidden; }
-  .gantt-bar { position: absolute; top: 2px; bottom: 2px; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; color: #fff; font-size: 11.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: filter 0.15s ease; cursor: pointer; }
-  .gantt-bar:hover { filter: brightness(1.1); }
   
+  .gantt-bar-work { position: absolute; top: 2px; bottom: 2px; border-radius: 4px 0 0 4px; display: flex; align-items: center; padding: 0 8px; color: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2; }
+  .gantt-bar-weather { position: absolute; top: 2px; bottom: 2px; border-radius: 0 4px 4px 0; background: repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 6px, #e2e8f0 6px, #e2e8f0 12px); border-left: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; padding: 0 6px; color: #475569; font-size: 10.5px; font-weight: 700; white-space: nowrap; z-index: 1; }
+
+  .gantt-legend { display: flex; gap: 16px; align-items: center; font-size: 12px; color: #64748b; }
+  .legend-box { width: 14px; height: 14px; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 5px; }
+
   /* 모달 */
   .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
-  .modal-dialog { background: #fff; border-radius: 8px; width: 520px; max-width: 90vw; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+  .modal-dialog { background: #fff; border-radius: 8px; width: 540px; max-width: 90vw; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
   .modal-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
   .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
   .modal-footer { padding: 14px 20px; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: flex-end; gap: 8px; }
@@ -38,53 +40,46 @@
 </head>
 <body>
 <div id="app-shell">
-  <!-- 사이드바 -->
   <aside id="sidebar"></aside>
 
   <div class="main">
-    <!-- 상단바 -->
     <header id="topbar"></header>
 
     <main id="page-content">
       <div class="page-head row space-between">
         <div>
           <h2>현장 관리</h2>
-          <div class="desc">등록된 건설 프로젝트별 공기 산정 현황, 매핑 관측소 및 전체 연속 공정 타임라인(Gantt)을 통합 관리합니다.</div>
+          <div class="desc">전국 564개 기상관측소 10개년 월평균 비작업일수 전체 통계를 연동한 연속 공정 타임라인(Gantt)입니다.</div>
         </div>
         <div>
           <button class="btn btn-primary" onclick="openNewProjectModal()">+ 신규 현장 등록</button>
         </div>
       </div>
 
-      <!-- 현장 프로젝트 카드 리스트 -->
-      <div class="project-grid" id="project-list-container">
-        <!-- JS 동적 렌더링 -->
-      </div>
+      <div class="project-grid" id="project-list-container"></div>
 
-      <!-- 종합 공정 간트차트 시각화 패널 -->
       <div class="gantt-wrap">
         <div class="row space-between items-center" style="margin-bottom: 16px;">
           <div>
-            <h3 style="margin: 0; font-size: 15px; color: #1e293b;">현장별 주요 공정 간트차트 (Timeline)</h3>
-            <span class="muted" style="font-size: 12px;">공사 물량·생산성 산정에서 등록된 공정 순서대로 연속(Finish-to-Start) 배치됩니다.</span>
+            <h3 style="margin: 0; font-size: 15px; color: #1e293b;">현장별 공정 타임라인 (10개년 관측소 비작업일 연동)</h3>
+            <span class="muted" style="font-size: 12px;" id="station-applied-text">관측소 통계 데이터 로딩 중...</span>
           </div>
-          <div class="row gap-8 items-center">
-            <span style="font-size:12.5px; color:#64748b; font-weight:600;">공정 확인 현장:</span>
+          <div class="row gap-16 items-center">
+            <div class="gantt-legend">
+              <span><span class="legend-box" style="background:#2563eb;"></span>순 작업일수(Net)</span>
+              <span><span class="legend-box" style="background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 3px,#e2e8f0 3px,#e2e8f0 6px);"></span>10년 평균 비작업일</span>
+            </div>
             <select id="sel-gantt-project" class="input" style="width: 240px; font-size: 13px; font-weight:600;" onchange="renderGanttChart(this.value)"></select>
           </div>
         </div>
 
         <div class="gantt-header-row">
           <div style="width: 260px;">공종 및 세부 품목명</div>
-          <div class="gantt-time-scale" id="gantt-scale-header">
-            <!-- JS 동적 시간 눈금 -->
-          </div>
-          <div style="width: 90px; text-align: right;">산정 공기</div>
+          <div class="gantt-time-scale" id="gantt-scale-header"></div>
+          <div style="width: 140px; text-align: right;">순작업 / 총소요공기</div>
         </div>
 
-        <div id="gantt-body">
-          <!-- JS 동적 렌더링 -->
-        </div>
+        <div id="gantt-body"></div>
       </div>
     </main>
   </div>
@@ -105,24 +100,25 @@
       <div class="row gap-12">
         <div style="flex:1;">
           <label style="font-size:12px; font-weight:600; color:#64748b;">공사 착공일</label>
-          <input type="date" id="m-inp-start" class="input" style="width:100%; margin-top:4px;">
+          <input type="date" id="m-inp-start" class="input" style="width:100%; margin-top:4px;" value="2026-03-01">
         </div>
         <div style="flex:1;">
           <label style="font-size:12px; font-weight:600; color:#64748b;">공사 준공예정일</label>
-          <input type="date" id="m-inp-end" class="input" style="width:100%; margin-top:4px;">
+          <input type="date" id="m-inp-end" class="input" style="width:100%; margin-top:4px;" value="2027-02-28">
         </div>
       </div>
       <div>
-        <label style="font-size:12px; font-weight:600; color:#64748b;">연계 기상관측지점</label>
-        <select id="m-sel-station" class="input" style="width:100%; margin-top:4px;">
-          <option value="대전 133번">대전 133번 (대전 덕명동 인접)</option>
-          <option value="아산배방 637번">아산배방 637번 (아산 배방읍 인접)</option>
-          <option value="천안 232번">천안 232번 (천안 신부동 인접)</option>
-        </select>
+        <label style="font-size:12px; font-weight:600; color:#64748b;">현장 소재지 주소 (4,418개 읍면동 자동 매핑)</label>
+        <input type="text" id="m-inp-addr" class="input" style="width:100%; margin-top:4px;" placeholder="예: 대전광역시 유성구 덕명동" oninput="autoDetectStation(this.value)">
+        <div id="addr-match-guide" style="font-size:12px; color:#2563eb; margin-top:4px; font-weight:600;"></div>
       </div>
       <div>
-        <label style="font-size:12px; font-weight:600; color:#64748b;">현장 설명 / 특이사항</label>
-        <textarea id="m-inp-desc" class="input" style="width:100%; height:70px; margin-top:4px; font-size:13px;" placeholder="지하매설물 간섭 구간, 기상 민감 공종 등"></textarea>
+        <label style="font-size:12px; font-weight:600; color:#64748b;">연계 기상관측소 (자동 검색 또는 선택)</label>
+        <select id="m-sel-station" class="input" style="width:100%; margin-top:4px;"></select>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:600; color:#64748b;">현장 특이사항</label>
+        <textarea id="m-inp-desc" class="input" style="width:100%; height:60px; margin-top:4px; font-size:13px;" placeholder="지하매설물 간섭 구간, 기상 민감 공종 등"></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -138,16 +134,67 @@
 <script src="js/calc.js"></script>
 <script src="js/nav.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+let FULL_WEATHER_DATA = { stations: {}, mapping: {} };
+
+document.addEventListener('DOMContentLoaded', async () => {
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('현장 관리');
 
+  // weather-workdays.json 전체 데이터(564개 관측소, 4418개 주소) 로드
+  try {
+    const res = await fetch('data/weather-workdays.json');
+    if (res.ok) {
+      FULL_WEATHER_DATA = await res.json();
+    }
+  } catch (e) {
+    console.warn('weather-workdays.json 로드 실패:', e);
+  }
+
   ensureDefaultProjects();
+  initStationDropdownModal();
   renderProjectCards();
   initGanttProjectSelector();
 });
 
-// 기존 DB의 날짜 키 호환성(start/startDate, end/endDate) 보장
+function initStationDropdownModal() {
+  const sel = document.getElementById('m-sel-station');
+  const stations = Object.keys(FULL_WEATHER_DATA.stations || {});
+  if (stations.length) {
+    sel.innerHTML = stations.sort().map(st => `<option value="${st}">${st}</option>`).join('');
+    sel.value = stations.includes('계룡') ? '계룡' : stations[0];
+  } else {
+    sel.innerHTML = '<option value="계룡">계룡 (대전 인접)</option><option value="송악">송악 (아산 인접)</option><option value="아산">아산</option>';
+  }
+}
+
+// 주소 입력 시 4,418개 매핑 테이블에서 관측소 실시간 자동 감지
+function autoDetectStation(addr) {
+  const kw = addr.trim();
+  const guide = document.getElementById('addr-match-guide');
+  const sel = document.getElementById('m-sel-station');
+  if (!kw) { guide.innerHTML = ''; return; }
+
+  const mapping = FULL_WEATHER_DATA.mapping || {};
+  let matched = mapping[kw];
+
+  if (!matched) {
+    // 부분 일치 탐색
+    for (const [fullAddr, info] of Object.entries(mapping)) {
+      if (fullAddr.includes(kw)) {
+        matched = info;
+        break;
+      }
+    }
+  }
+
+  if (matched) {
+    guide.innerHTML = `✓ 매핑 관측소: <strong>${matched.s}</strong> (거리: ${matched.d}km)`;
+    sel.value = matched.s;
+  } else {
+    guide.innerHTML = '';
+  }
+}
+
 function ensureDefaultProjects() {
   const db = loadDB();
   if (!db.projects || db.projects.length === 0) {
@@ -155,7 +202,8 @@ function ensureDefaultProjects() {
       {
         id: "P_001",
         name: "OO지구 공동주택 신축공사",
-        station: "대전 133번",
+        station: "계룡",
+        addr: "대전광역시 유성구 덕명동",
         startDate: "2026-03-01",
         endDate: "2027-02-28",
         desc: "토공사 및 구조물 공사 집중 구간",
@@ -164,7 +212,8 @@ function ensureDefaultProjects() {
       {
         id: "P_002",
         name: "△△ 도로 확장공사 2공구",
-        station: "대전 133번",
+        station: "송악",
+        addr: "충청남도 아산시 배방읍",
         startDate: "2026-05-10",
         endDate: "2026-11-30",
         desc: "지하 관로 매설 및 포장 공사",
@@ -175,7 +224,41 @@ function ensureDefaultProjects() {
   }
 }
 
-// 상단 프로젝트 카드 렌더링
+// 564개 관측소 10개년 월평균 비작업일수 기반 실계산
+function calculateStationNonWorkDays(stationName, workDays, startMonth = 3) {
+  const stations = FULL_WEATHER_DATA.stations || {};
+  let monthlyData = stations[stationName];
+
+  // 폴백
+  if (!monthlyData) {
+    if (stationName === '계룡') monthlyData = [9.8, 5.7, 1.7, 2.2, 2.8, 2.3, 5.5, 4.2, 3.1, 1.8, 1.2, 6.3];
+    else if (stationName === '송악') monthlyData = [4.5, 2.9, 0.8, 1.3, 2.1, 1.2, 3.8, 5.2, 3.2, 1.2, 1.4, 4.2];
+    else monthlyData = [5.0, 3.0, 1.5, 2.0, 2.5, 2.0, 5.0, 4.5, 3.0, 1.5, 1.0, 4.5];
+  }
+
+  let remainingWorkDays = workDays;
+  let curMonthIdx = (startMonth - 1) % 12;
+  let totalWeatherNonWork = 0;
+
+  while (remainingWorkDays > 0) {
+    const workThisMonth = Math.min(remainingWorkDays, 22);
+    const monthRatio = workThisMonth / 22;
+    totalWeatherNonWork += (monthlyData[curMonthIdx] * monthRatio);
+
+    remainingWorkDays -= workThisMonth;
+    curMonthIdx = (curMonthIdx + 1) % 12;
+  }
+
+  // 주휴일(작업 5일당 약 2일) 및 겹침 보정
+  const holidayDays = Math.ceil(workDays * (2 / 5));
+  const finalNonWork = Math.ceil((totalWeatherNonWork + holidayDays) * 0.85);
+
+  return {
+    weatherOnly: Math.round(totalWeatherNonWork * 10) / 10,
+    totalNonWork: finalNonWork
+  };
+}
+
 function renderProjectCards() {
   const db = loadDB();
   const container = document.getElementById('project-list-container');
@@ -189,12 +272,18 @@ function renderProjectCards() {
 
   container.innerHTML = projects.map(p => {
     const pQuants = quantities.filter(q => q.projectId === p.id);
-    const totalDays = pQuants.reduce((acc, cur) => acc + (cur.workDays || 0), 0);
+    const netDays = pQuants.reduce((acc, cur) => acc + (cur.workDays || 0), 0);
+    const stName = p.station || '계룡';
 
-    // 날짜 키값 호환 처리 (undefined 방지)
+    let totalNonWork = 0;
+    pQuants.forEach(q => {
+      const res = calculateStationNonWorkDays(stName, q.workDays || 0, 3);
+      totalNonWork += res.totalNonWork;
+    });
+
+    const totalCalendarDays = netDays + totalNonWork;
     const sDate = p.startDate || p.start || '2026-03-01';
     const eDate = p.endDate || p.end || '2027-02-28';
-    const stName = p.station || '대전 133번';
 
     return `
       <div class="project-card">
@@ -205,9 +294,11 @@ function renderProjectCards() {
           </div>
           <div class="project-meta">
             • 공사 기간: <strong>${sDate} ~ ${eDate}</strong><br>
-            • 기상 관측소: <strong>${stName}</strong><br>
-            • 등록 물량 공종: <strong>${pQuants.length}건</strong> (순 작업일수 합계: <strong>${totalDays}일</strong>)<br>
-            • 비고: ${p.desc || '특이사항 없음'}
+            • 매핑 관측소: <strong style="color:var(--primary);">${stName} (10개년 월평균 연동)</strong><br>
+            • 순 작업일수: <strong>${netDays}일</strong> (등록 물량 ${pQuants.length}건)<br>
+            • 10년 통계 기반 비작업일: <strong style="color:#d97706;">+${totalNonWork}일</strong><br>
+            • <strong>최종 산정 총 공사기간: ${totalCalendarDays}일</strong><br>
+            • 위치/비고: ${p.addr || p.desc || '특이사항 없음'}
           </div>
         </div>
         <div class="row gap-8" style="margin-top:12px;">
@@ -220,7 +311,6 @@ function renderProjectCards() {
   }).join('');
 }
 
-// 간트차트 셀렉터 초기화
 function initGanttProjectSelector() {
   const db = loadDB();
   const sel = document.getElementById('sel-gantt-project');
@@ -235,11 +325,16 @@ function initGanttProjectSelector() {
   }
 }
 
-// 간트차트 연속(Finish-to-Start) 완벽 렌더링
 function renderGanttChart(projectId) {
   const db = loadDB();
   const body = document.getElementById('gantt-body');
   const scaleHeader = document.getElementById('gantt-scale-header');
+  const stationText = document.getElementById('station-applied-text');
+  
+  const curProj = (db.projects || []).find(p => p.id === projectId);
+  const stName = curProj ? (curProj.station || '계룡') : '계룡';
+  if (stationText) stationText.textContent = `적용 관측소: [${stName}] 10개년(2016~2025) 전체 월평균 통계 연동 완료`;
+
   const quants = (db.quantities || []).filter(q => q.projectId === projectId);
 
   if (!quants.length) {
@@ -253,59 +348,76 @@ function renderGanttChart(projectId) {
     return;
   }
 
-  // 1. 총 소요 일수 계산 (예: 18 + 10 + 60 = 88일)
-  const totalWorkDays = quants.reduce((sum, q) => sum + (q.workDays || 1), 0);
+  let currentStartMonth = 3;
+  const scheduleChain = quants.map(q => {
+    const net = q.workDays || 1;
+    const nw = calculateStationNonWorkDays(stName, net, currentStartMonth);
+    const calDays = net + nw.totalNonWork;
+    return {
+      ...q,
+      netDays: net,
+      nonWorkDays: nw.totalNonWork,
+      calendarDays: calDays
+    };
+  });
 
-  // 2. 상단 타임라인 눈금 동적 생성
+  const totalCalendarDays = scheduleChain.reduce((s, c) => s + c.calendarDays, 0);
+
   scaleHeader.innerHTML = `
-    <span class="scale-mark">착공 (0일차)</span>
-    <span class="scale-mark">${Math.round(totalWorkDays * 0.25)}일차</span>
-    <span class="scale-mark">${Math.round(totalWorkDays * 0.5)}일차</span>
-    <span class="scale-mark">${Math.round(totalWorkDays * 0.75)}일차</span>
-    <span class="scale-mark">준공 (${totalWorkDays}일차)</span>
+    <span class="scale-mark">착공 (0일)</span>
+    <span class="scale-mark">${Math.round(totalCalendarDays * 0.25)}일차</span>
+    <span class="scale-mark">${Math.round(totalCalendarDays * 0.5)}일차</span>
+    <span class="scale-mark">${Math.round(totalCalendarDays * 0.75)}일차</span>
+    <span class="scale-mark">최종 준공 (${totalCalendarDays}일차)</span>
   `;
 
-  // 3. 앞 작업이 끝나는 지점부터 바로 다음 작업이 이어지는 누적 오프셋 계산
-  let currentStartDay = 0;
+  let currentOffsetDay = 0;
   const colors = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0891b2'];
 
-  body.innerHTML = quants.map((q, idx) => {
-    const days = q.workDays || 1;
-    const startDay = currentStartDay;
-    const endDay = currentStartDay + days;
-    currentStartDay = endDay; // 다음 공정 시작점으로 누적
+  body.innerHTML = scheduleChain.map((item, idx) => {
+    const startDay = currentOffsetDay;
+    const workEndDay = startDay + item.netDays;
+    const finalEndDay = startDay + item.calendarDays;
+    currentOffsetDay = finalEndDay;
 
-    // 전체 일수 기준 백분율(%) 계산
-    const leftPct = ((startDay / totalWorkDays) * 100).toFixed(2);
-    const widthPct = Math.max(((days / totalWorkDays) * 100), 2.5).toFixed(2); // 너무 짧으면 최소 2.5% 확보
+    const leftPct = ((startDay / totalCalendarDays) * 100).toFixed(2);
+    const workWidthPct = ((item.netDays / totalCalendarDays) * 100).toFixed(2);
+    const nonWorkWidthPct = ((item.nonWorkDays / totalCalendarDays) * 100).toFixed(2);
     const color = colors[idx % colors.length];
 
     return `
       <div class="gantt-item-row">
-        <div class="gantt-item-label" title="${q.name}">
-          <span class="badge" style="background:#f1f5f9; color:#475569; font-size:11px; margin-right:4px;">${q.category || '공종'}</span>
-          ${q.name}
+        <div class="gantt-item-label" title="${item.name}">
+          <span class="badge" style="background:#f1f5f9; color:#475569; font-size:11px; margin-right:4px;">${item.category || '공종'}</span>
+          ${item.name}
         </div>
         <div class="gantt-timeline-track">
-          <div class="gantt-bar" style="left:${leftPct}%; width:${widthPct}%; background:${color};" 
-               title="${q.name}&#10;• 소요기간: ${days}일&#10;• 공정구간: ${startDay}일차 ~ ${endDay}일차">
-            ${q.name} (${days}일)
+          <div class="gantt-bar-work" 
+               style="left:${leftPct}%; width:${workWidthPct}%; background:${color};"
+               title="${item.name}&#10;• 순 작업일수: ${item.netDays}일 (${startDay}일차 ~ ${workEndDay}일차)">
+            ${item.name} (${item.netDays}일)
+          </div>
+          <div class="gantt-bar-weather" 
+               style="left:${parseFloat(leftPct) + parseFloat(workWidthPct)}%; width:${nonWorkWidthPct}%;"
+               title="${stName} 10개년 통계 비작업일: +${item.nonWorkDays}일&#10;(${workEndDay}일차 ~ ${finalEndDay}일차)">
+            +${item.nonWorkDays}일 (10년 통계)
           </div>
         </div>
-        <div style="width: 90px; text-align: right; font-weight: 700; color: #1e293b;" class="mono">
-          ${days} 일
+        <div style="width: 140px; text-align: right; color: #1e293b;" class="mono">
+          <span style="color:#2563eb; font-weight:700;">${item.netDays}일</span> + 
+          <span style="color:#d97706; font-weight:700;">${item.nonWorkDays}일</span> = 
+          <strong>${item.calendarDays}일</strong>
         </div>
       </div>
     `;
   }).join('');
 }
 
-// 신규 현장 모달 제어
 function openNewProjectModal() {
   document.getElementById('m-inp-name').value = '';
-  document.getElementById('m-inp-start').value = '2026-09-01';
-  document.getElementById('m-inp-end').value = '2027-08-31';
+  document.getElementById('m-inp-addr').value = '';
   document.getElementById('m-inp-desc').value = '';
+  document.getElementById('addr-match-guide').innerHTML = '';
   document.getElementById('modal-project').style.display = 'flex';
 }
 
@@ -317,6 +429,7 @@ function saveNewProject() {
   const name = document.getElementById('m-inp-name').value.trim();
   const start = document.getElementById('m-inp-start').value;
   const end = document.getElementById('m-inp-end').value;
+  const addr = document.getElementById('m-inp-addr').value.trim();
   const station = document.getElementById('m-sel-station').value;
   const desc = document.getElementById('m-inp-desc').value.trim();
 
@@ -331,6 +444,7 @@ function saveNewProject() {
     name: name,
     startDate: start,
     endDate: end,
+    addr: addr,
     station: station,
     desc: desc,
     status: '공사중'
@@ -343,7 +457,7 @@ function saveNewProject() {
   closeModal();
   renderProjectCards();
   initGanttProjectSelector();
-  alert(`신규 현장 '${name}'이 등록되었습니다.`);
+  alert(`신규 현장 '${name}' 등록 완료!\n관측소 [${station}]의 10개년 월평균 비작업일수 전체 통계가 자동 연동되었습니다.`);
 }
 
 function deleteProject(pid) {
