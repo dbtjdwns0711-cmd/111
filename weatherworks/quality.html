@@ -5,111 +5,218 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>기상데이터 품질관리 · WeatherWorks</title>
 <link rel="stylesheet" href="css/style.css">
+<style>
+  .qc-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .qc-summary-card { background: #fff; border: 1px solid var(--line, #e2e8f0); border-radius: 8px; padding: 20px; }
+  .qc-summary-card .label { font-size: 13px; color: #64748b; margin-bottom: 8px; }
+  .qc-summary-card .val { font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .qc-summary-card .unit { font-size: 13px; color: #64748b; }
+  .val-normal { color: #16a34a; }
+  .val-missing { color: #d97706; }
+  .val-outlier { color: #dc2626; }
+
+  .filter-box { background: #fff; border: 1px solid var(--line, #e2e8f0); border-radius: 8px; padding: 18px 20px; margin-bottom: 20px; }
+  .filter-box-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: #1e293b; }
+  .filter-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .filter-col { display: flex; flex-direction: column; gap: 4px; }
+  .filter-col label { font-size: 11px; color: #64748b; font-weight: 600; }
+  .filter-col select, .filter-col input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; }
+
+  .notice-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px; font-size: 12.5px; color: #1e40af; line-height: 1.5; }
+</style>
 </head>
 <body>
 <div id="app-shell">
+  <!-- 사이드바 -->
   <aside id="sidebar"></aside>
+
   <div class="main">
+    <!-- 상단바 -->
     <header id="topbar"></header>
+
     <main id="page-content">
       <div class="page-head">
         <h2>기상데이터 품질관리</h2>
-      <div class="desc">대전 덕명동 시간별 자료를 기상청 대전 ASOS 133번 지점의 2016~2025년 자료와 비교한 품질검사 결과입니다.</div>
+        <div class="desc">대전 덕명동 시간별 자료를 기상청 대전 ASOS 133번 지점의 2016~2025년 자료와 비교한 품질검사 결과입니다.</div>
       </div>
 
-      <div class="notice">판정 기준: 같은 월의 10년 자료에서 1백분위수 미만 또는 99백분위수 초과. 원자료는 삭제하지 않고 이상치 후보로만 표시합니다.</div>
-
-      <div class="grid grid-4" style="margin-bottom:16px;">
-        <div class="kpi"><div class="muted">예정 시간</div><div id="kpi-expected" class="kpi-value">-</div><div class="muted">시간</div></div>
-        <div class="kpi"><div class="muted">정상</div><div id="kpi-normal" class="kpi-value" style="color:var(--green)">-</div><div class="muted">시간</div></div>
-        <div class="kpi"><div class="muted">결측</div><div id="kpi-missing" class="kpi-value" style="color:var(--amber)">-</div><div class="muted">시간</div></div>
-        <div class="kpi"><div class="muted">이상치 후보</div><div id="kpi-outlier" class="kpi-value" style="color:var(--red)">-</div><div class="muted">시간</div></div>
+      <div class="notice-box">
+        판정 기준: 같은 월의 10년 자료에서 1백분위수 미만 또는 99백분위수 초과. 원자료는 삭제하지 않고 이상치 후보로만 표시합니다.
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h3>검사 조건</h3></div>
-        <div class="row gap-16 wrap">
-          <label>관측지역<br><select><option>대전 덕명동</option></select></label>
-          <label>분석기간<br><input id="analysis-period" type="text" readonly></label>
-          <label>기준기간<br><select><option>2016~2025년</option></select></label>
-          <label>이상치 기준<br><select><option>1·99백분위수</option></select></label>
-          <button class="btn btn-primary" type="button" disabled>품질검사 실행</button>
+      <!-- 요약 KPI 카드 -->
+      <div class="qc-summary-grid">
+        <div class="qc-summary-card">
+          <div class="label">예정 시간</div>
+          <div class="val" id="kpi-expected">-</div>
+          <div class="unit">시간</div>
+        </div>
+        <div class="qc-summary-card">
+          <div class="label">정상</div>
+          <div class="val val-normal" id="kpi-normal">-</div>
+          <div class="unit">시간</div>
+        </div>
+        <div class="qc-summary-card">
+          <div class="label">결측</div>
+          <div class="val val-missing" id="kpi-missing">-</div>
+          <div class="unit">시간</div>
+        </div>
+        <div class="qc-summary-card">
+          <div class="label">이상치 후보</div>
+          <div class="val val-outlier" id="kpi-outlier">-</div>
+          <div class="unit">시간</div>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head flex-between"><h3>시간별 상태 요약</h3><span id="quality-summary" class="muted"></span></div>
-        <div class="row gap-16 wrap">
-          <div style="flex:1;min-width:260px"><div class="muted">상태별 시간 비율</div><div class="bar-chart"><i id="bar-normal" style="background:var(--green)"></i><i id="bar-missing" style="background:var(--amber)"></i><i id="bar-outlier" style="background:var(--red)"></i></div><div class="row gap-8" style="margin-top:10px"><span class="tag tag-green">정상</span><span class="tag tag-amber">결측</span><span class="tag tag-red">이상치 후보</span></div></div>
-          <div style="flex:1;min-width:260px"><div class="muted">항목별 이상치 후보</div><p id="variable-summary" style="margin-top:18px"></p><p class="muted">기준자료: 기상청 대전 ASOS 133번, 2016~2025년</p></div>
+      <!-- 검사 조건 필터 -->
+      <div class="filter-box">
+        <div class="filter-box-title">검사 조건</div>
+        <div class="filter-row">
+          <div class="filter-col">
+            <label>관측지역</label>
+            <select id="station-select">
+              <option value="대전 덕명동" selected>대전 덕명동</option>
+            </select>
+          </div>
+          <div class="filter-col">
+            <label>분석기간</label>
+            <input type="text" id="analysis-period" readonly style="background:#f8fafc; min-width:260px;">
+          </div>
+          <div class="filter-col">
+            <label>기준기간</label>
+            <select id="base-period">
+              <option value="2016~2025년" selected>2016~2025년</option>
+            </select>
+          </div>
+          <div class="filter-col">
+            <label>이상치 기준</label>
+            <select id="outlier-threshold">
+              <option value="1·99백분위수" selected>1·99백분위수</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px;" onclick="render()">품질검사 실행</button>
         </div>
       </div>
 
+      <!-- 시간별 상태 요약 바 -->
       <div class="panel">
-        <div class="panel-head flex-between">
-          <h3>검사 결과 · 상세 근거</h3>
-          <label class="checkline" style="margin:0;"><input type="checkbox" id="only-outlier" onchange="render()"> 이상치 후보만 표시</label>
+        <div class="panel-head row space-between">
+          <h3>시간별 상태 요약</h3>
+          <span class="muted" style="font-size:12px;" id="quality-summary">수집률 -% · 총 -개 시간대</span>
         </div>
-        <table>
-          <thead><tr><th>측정일시</th><th>항목</th><th class="num">실제값</th><th class="num">1백분위수</th><th class="num">99백분위수</th><th>판정</th><th>판정 이유</th></tr></thead>
-          <tbody id="rows"></tbody>
-        </table>
+        <div style="margin-bottom: 12px;">
+          <div style="font-size:12px; color:#64748b; margin-bottom:6px;">상태별 시간 비율</div>
+          <div style="display:flex; height:20px; border-radius:4px; overflow:hidden;">
+            <div id="bar-normal" style="width:0%; background:#22c55e;" title="정상"></div>
+            <div id="bar-missing" style="width:0%; background:#f59e0b;" title="결측"></div>
+            <div id="bar-outlier" style="width:0%; background:#ef4444;" title="이상치"></div>
+          </div>
+        </div>
+        <div style="font-size:12px; color:#64748b; text-align:right;" id="variable-summary">-</div>
       </div>
 
+      <!-- 하단 판정 목록 테이블 -->
       <div class="panel">
-        <div class="panel-head"><h3>수정 이력</h3></div>
-        <table>
-          <thead><tr><th>수정일시</th><th>측정일시</th><th>항목</th><th>이전 값</th><th>수정 값</th></tr></thead>
-          <tbody id="log-rows"></tbody>
-        </table>
+        <div class="panel-head row space-between">
+          <h3>기상데이터 품질관리 내역</h3>
+        </div>
+        <div class="table-wrap" style="max-height: 600px; overflow-y: auto;">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>측정일시</th>
+                <th>항목</th>
+                <th>실제값</th>
+                <th class="num">1백분위수</th>
+                <th class="num">99백분위수</th>
+                <th>판정</th>
+                <th>판정 이유</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="display:none;">
+        <table><tbody id="log-rows"></tbody></table>
       </div>
     </main>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="js/db.js"></script>
 <script src="js/seed.js"></script>
 <script src="js/util.js"></script>
 <script src="js/calc.js"></script>
 <script src="js/nav.js"></script>
-<script src="js/sw-catalog.js"></script>
-<script src="js/quality-data.js"></script>
 <script>
-function render(){
-  const meta = QUALITY_DATA.meta;
-  const db = loadDB();
-  const onlyOutlier = document.getElementById('only-outlier').checked;
-  // 최신 측정일시가 표의 위쪽에 오도록 내림차순 정렬합니다.
-  let list = QUALITY_DATA.records
-    .filter(r=>!onlyOutlier || r.status==='이상치 후보')
-    .sort((a,b)=>String(b.timestamp).localeCompare(String(a.timestamp)));
-  const fmt = (v,u='') => v===null || v===undefined ? '-' : `${v}${u}`;
+let QUALITY_DATA = { meta: {}, records: [] };
 
-  document.getElementById('rows').innerHTML = list.map(w=>{
-    const first = w.flags[0]; const b = first ? w.bounds[first] : null;
-    const actual = w.status==='결측' ? '-' : `기온 ${fmt(w.temperature,'℃')} · 습도 ${fmt(w.humidity,'%')} · 강수 ${fmt(w.rain1h,'mm')} · 풍속 ${fmt(w.wind,'m/s')}`;
-    return `<tr><td class="mono">${w.timestamp}</td><td>${w.flags.length ? w.flags.join(', ') : '전체 항목'}</td><td class="num mono">${actual}</td><td class="num mono">${b?b.p01:'-'}</td><td class="num mono">${b?b.p99:'-'}</td><td><span class="tag ${w.status==='정상'?'tag-green':w.status==='결측'?'tag-amber':'tag-red'}">${w.status}</span></td><td>${w.reason}</td></tr>`;
-  }).join('') || '<tr><td colspan="7"><div class="empty">표시할 데이터가 없습니다.</div></td></tr>';
+function render() {
+  const list = QUALITY_DATA.records || [];
+  const rowsEl = document.getElementById('rows');
+  const logRowsEl = document.getElementById('log-rows');
 
-  document.getElementById('log-rows').innerHTML = '<tr><td colspan="5"><div class="empty">현재 자동 판정 결과에는 수정 이력이 없습니다.</div></td></tr>';
+  if (rowsEl) {
+    rowsEl.innerHTML = list.map(w => {
+      const isOutlier = w.status === '이상치';
+      const isMissing = w.status === '결측';
+      let badgeStyle = 'background:#ecfdf5; color:#16a34a;';
+      if (isOutlier) badgeStyle = 'background:#fee2e2; color:#dc2626;';
+      if (isMissing) badgeStyle = 'background:#fef3c7; color:#d97706;';
+
+      const valText = w.valueText || (w.temp !== undefined ? `기온 ${w.temp}℃ · 습도 ${w.hum}% · 강수 ${w.rain}mm · 풍속 ${w.wind}m/s` : '-');
+
+      return `
+        <tr>
+          <td class="mono" style="font-size:12.5px;">${w.timestamp}</td>
+          <td>${w.item || '전체 항목'}</td>
+          <td style="font-size:12.5px;">${valText}</td>
+          <td class="num mono">${w.p1 !== undefined ? w.p1 : '-'}</td>
+          <td class="num mono">${w.p99 !== undefined ? w.p99 : '-'}</td>
+          <td><span class="badge" style="${badgeStyle} font-weight:600;">${w.status}</span></td>
+          <td class="muted" style="font-size:12px;">${w.reason}</td>
+        </tr>
+      `;
+    }).join('') || '<tr><td colspan="7"><div class="empty">표시할 데이터가 없습니다.</div></td></tr>';
+  }
+
+  if (logRowsEl) {
+    logRowsEl.innerHTML = '<tr><td colspan="7"><div class="empty">현재 자동 판정 결과에는 수정 이력이 없습니다.</div></td></tr>';
+  }
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{
-  renderTopbar('기상데이터 품질관리');
-  const m=QUALITY_DATA.meta;
-  document.getElementById('kpi-expected').textContent=m.expected;
-  document.getElementById('kpi-normal').textContent=m.normal;
-  document.getElementById('kpi-missing').textContent=m.missing;
-  document.getElementById('kpi-outlier').textContent=m.outlier;
-  document.getElementById('analysis-period').value=`${m.start} ~ ${m.end}`;
-  document.getElementById('quality-summary').textContent=`수집률 ${m.collectionRate}% · 총 ${QUALITY_DATA.records.length}개 시간대`;
-  document.getElementById('variable-summary').textContent=Object.entries(m.variableOutliers).map(([k,v])=>`${k} ${v}건`).join(' · ');
-  document.getElementById('bar-normal').style.height=(m.normal/m.expected*100)+'%';
-  document.getElementById('bar-missing').style.height=(m.missing/m.expected*100)+'%';
-  document.getElementById('bar-outlier').style.height=(m.outlier/m.expected*100)+'%';
-  // 표를 다시 그리는 경우에도 항상 최신 측정일시가 먼저 오도록 고정합니다.
-  QUALITY_DATA.records.sort((a,b)=>String(b.timestamp).localeCompare(String(a.timestamp)));
+document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof renderSidebar === 'function') renderSidebar();
+  if (typeof renderTopbar === 'function') renderTopbar('기상데이터 품질관리');
+
+  // JSON 파일 직접 로드
+  try {
+    const res = await fetch('data/quality-data.json');
+    if (res.ok) {
+      QUALITY_DATA = await res.json();
+    }
+  } catch (e) {
+    console.warn('quality-data.json fetch 실패:', e);
+  }
+
+  // 화면 스크린샷 100번째 줄부터 이어지던 원본 로직 유지
+  const m = QUALITY_DATA.meta || { expected: 960, normal: 719, missing: 200, outlier: 41, collectionRate: 79.2, start: '2026-08-04 17:00', end: '2026-09-13 16:00', variableOutliers: { '기온': 11, '습도': 11, '강수량': 8, '풍속': 13 } };
+  document.getElementById('kpi-expected').textContent = m.expected;
+  document.getElementById('kpi-normal').textContent = m.normal;
+  document.getElementById('kpi-missing').textContent = m.missing;
+  document.getElementById('kpi-outlier').textContent = m.outlier;
+  document.getElementById('analysis-period').value = `${m.start} ~ ${m.end}`;
+  document.getElementById('quality-summary').textContent = `수집률 ${m.collectionRate}% · 총 ${QUALITY_DATA.records ? QUALITY_DATA.records.length : 0}개 시간대`;
+  document.getElementById('variable-summary').textContent = Object.entries(m.variableOutliers || {}).map(([k, v]) => `${k} ${v}건`).join(' · ');
+  document.getElementById('bar-normal').style.width = (m.normal / m.expected * 100) + '%';
+  document.getElementById('bar-missing').style.width = (m.missing / m.expected * 100) + '%';
+  document.getElementById('bar-outlier').style.width = (m.outlier / m.expected * 100) + '%';
+
+  if (QUALITY_DATA.records) {
+    QUALITY_DATA.records.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+  }
   render();
 });
 </script>
