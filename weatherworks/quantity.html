@@ -73,10 +73,9 @@
           <span class="muted" style="font-size:12px;" id="catalog-count-badge">표준품셈 로딩 중...</span>
         </div>
 
-        <!-- 세부 규격 및 조건 전체가 줄바꿈되어 깨끗하게 나오는 안내 박스 -->
         <div class="spec-detail-box" id="spec-info-box">
           <div class="detail-title">
-            <span id="txt-selected-spec">선택된 표준 규격: <strong>흙깎기 (기계 - 보통토사 중규모)</strong></span>
+            <span id="txt-selected-spec">선택된 표준 규격: <strong>-</strong></span>
             <span id="txt-calc-result" style="color:#2563eb; font-weight:700;"></span>
           </div>
           <div class="detail-condition" id="txt-selected-condition">
@@ -123,7 +122,7 @@
       <div class="panel">
         <div class="panel-head row space-between">
           <h3>현재 현장 물량 산정 내역</h3>
-          <a href="schedule.html" style="color:var(--primary); font-size:13px; font-weight:600; text-decoration:none;">간트차트 확인하러 가기 &rarr;</a>
+          <a href="index.html" style="color:var(--primary); font-size:13px; font-weight:600; text-decoration:none;">간트차트 확인하러 가기 &rarr;</a>
         </div>
         <div class="table-wrap">
           <table class="table">
@@ -169,7 +168,6 @@ function loadCatalogData() {
   const raw = (typeof SW_CATALOG !== 'undefined') ? SW_CATALOG : [];
 
   catalogList = raw.map((item, idx) => {
-    // 줄바꿈 기호('\n' 또는 '\\n') 정리
     const cleanCondition = (item.condition || '').replace(/\\n/g, '\n').trim();
     const cleanBasis = (item.basis || '').replace(/\\n/g, '\n').trim();
 
@@ -204,7 +202,7 @@ function handleSearch(keyword) {
     item.name.toLowerCase().includes(kw) ||
     item.category.toLowerCase().includes(kw) ||
     item.condition.toLowerCase().includes(kw)
-  ).slice(0, 15); // 상위 15개 추천
+  ).slice(0, 15);
 
   if (!results.length) {
     dropdown.innerHTML = '<div style="padding:14px; color:#94a3b8; font-size:13px; text-align:center;">검색된 표준품셈 품목이 없습니다.</div>';
@@ -234,13 +232,11 @@ function selectFromSearch(itemId) {
   document.getElementById('catalog-search').value = target.name;
   document.getElementById('search-dropdown').style.display = 'none';
 
-  // 대분류 셀렉터 동기화
   const catSel = document.getElementById('sel-category');
   catSel.value = target.category;
   onCategoryChange(target.category, target.id);
 }
 
-// 외부 클릭 시 검색창 닫기
 document.addEventListener('click', (e) => {
   const searchWrap = document.querySelector('.search-input-wrap');
   if (searchWrap && !searchWrap.contains(e.target)) {
@@ -280,7 +276,6 @@ function initCategoryDropdown() {
   onCategoryChange(catSel.value);
 }
 
-// 대분류 변경 시 품목 목록상자 채우기
 function onCategoryChange(cat, targetItemId = null) {
   const itemSel = document.getElementById('sel-item');
   const countSpan = document.getElementById('item-count-text');
@@ -289,7 +284,6 @@ function onCategoryChange(cat, targetItemId = null) {
   if (countSpan) countSpan.textContent = filtered.length;
 
   itemSel.innerHTML = filtered.map(item => {
-    // 억지로 ... 처리하지 않고 원본 이름과 세부 핵심을 표기하되, title 툴팁에 전체 내용 포함
     const condBrief = item.condition ? ` (${item.condition.split('\n')[0].replace(/^[•\s\.\-]+/, '')})` : '';
     return `<option value="${item.id}" title="${item.name}&#10;${item.condition}">${item.name}${condBrief}</option>`;
   }).join('');
@@ -301,17 +295,14 @@ function onCategoryChange(cat, targetItemId = null) {
   }
 }
 
-// 품목 선택 시: 단위 변경, 일일작업량 바인딩, 세부 안내 박스 갱신
 function onItemChange(itemId) {
   const target = catalogList.find(c => c.id === itemId);
   if (!target) return;
 
-  // 1. 일일작업량 및 단위 세팅
   document.getElementById('inp-daily-rate').value = target.rate;
   document.getElementById('badge-daily-unit').textContent = `${target.unit}/일`;
   document.getElementById('badge-total-unit').textContent = target.unit;
 
-  // 2. 상단 상세 안내 배너 풀 텍스트 표기
   document.getElementById('txt-selected-spec').innerHTML = `
     선택된 표준 규격: <strong>[${target.name}]</strong> (일일 표준작업량: <strong>${target.rate} ${target.unit}/일</strong>)
   `;
@@ -324,7 +315,6 @@ function onItemChange(itemId) {
   calculateDays();
 }
 
-// 공기 실시간 계산
 function calculateDays() {
   const rate = parseFloat(document.getElementById('inp-daily-rate').value) || 0;
   const qty = parseFloat(document.getElementById('inp-total-qty').value) || 0;
@@ -341,7 +331,6 @@ function calculateDays() {
   }
 }
 
-// 공정표 등록
 function addQuantityItem() {
   const db = loadDB();
   const itemId = document.getElementById('sel-item').value;
