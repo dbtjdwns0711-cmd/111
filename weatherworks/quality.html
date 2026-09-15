@@ -18,96 +18,124 @@
     <main id="page-content">
       <div class="page-head">
         <h2>기상데이터 품질관리 (QC)</h2>
-        <div class="desc">기상청 10개년 종관/AWS 관측자료의 물리적 한계 검사, 단계별 결측 보정 및 이상치 정제 상태를 관리합니다.</div>
+        <div class="desc">10개년 기상청 종관(ASOS) 및 방재(AWS) 시계열 자료의 결측 정제, 한계 검사, 이상치 보정 현황을 검증합니다.</div>
       </div>
 
-      <div class="grid grid-4">
+      <!-- 상단 QC 통계 카드 -->
+      <div class="grid grid-4" id="qc-stats-grid">
         <div class="stat-card">
-          <div class="label">총 검증 데이터 건수</div>
-          <div class="value">87,600<small> 건/10년</small></div>
+          <div class="label">총 검증 관측치</div>
+          <div class="value" id="qc-total-obs">87,600<small> 건</small></div>
         </div>
         <div class="stat-card">
-          <div class="label">정상 관측률</div>
-          <div class="value" style="color:var(--primary);">99.72<small> %</small></div>
+          <div class="label">평균 데이터 유효율</div>
+          <div class="value" id="qc-valid-rate" style="color:var(--primary);">99.82<small> %</small></div>
         </div>
         <div class="stat-card">
-          <div class="label">결측 보정 (대체 완료)</div>
-          <div class="value">245<small> 건</small></div>
+          <div class="label">결측치 대치 보정</div>
+          <div class="value" id="qc-interpolated">158<small> 건</small></div>
         </div>
         <div class="stat-card">
-          <div class="label">QC 플래그 상태</div>
-          <div class="value"><span class="badge" style="background:#ecfdf5; color:#065f46; font-size:14px; padding:4px 8px;">정상 (Grade A)</span></div>
+          <div class="label">품질 보증 등급</div>
+          <div class="value" id="qc-grade"><span class="badge" style="background:#ecfdf5; color:#065f46; font-size:14px; padding:4px 8px;">Grade 1 (우수)</span></div>
         </div>
       </div>
 
+      <!-- 기상 요소별 QC 상세 내역 -->
       <div class="panel">
         <div class="panel-head row space-between">
-          <h3>기상 요소별 품질 검증 및 보정 내역</h3>
-          <span class="muted" style="font-size:12px;">적용 알고리즘: WMO 가이드라인 및 기상청 기상측기 품질검사 규정</span>
+          <h3>기상 관측 변수별 품질 지표 (10개년 누적)</h3>
+          <span class="muted" style="font-size:12px;">WMO / 기상청 국가기후데이터품질관리(KCDQ) 표준 적용</span>
         </div>
         <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
-                <th>검증 요소</th>
-                <th>물리적 유효 범위</th>
-                <th>전체 관측 건수</th>
-                <th>정상 데이터</th>
-                <th>결측치 (보정치)</th>
+                <th>검증 기상요소</th>
+                <th>물리적 한계범위</th>
+                <th class="num">총 관측수</th>
+                <th class="num">정상 관측치</th>
+                <th class="num">결측·이상치</th>
                 <th>적용 보정 알고리즘</th>
-                <th>신뢰도</th>
+                <th>데이터 적합도</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="tbl-qc-metrics">
+              <!-- JS 동적 로드 또는 기본값 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 관측소별 가동률 및 신뢰도 매핑 현황 -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>주요 관측소 센서 가동률 및 이상치 플래그 현황</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
               <tr>
-                <td><strong>시간 강수량 (RN)</strong></td>
-                <td>0.0 ~ 150.0 mm/h</td>
-                <td class="num mono">87,600</td>
-                <td class="num mono">87,412</td>
-                <td class="num mono">188 건</td>
-                <td>인접 관측소 가중평균 및 스플라인 보간</td>
-                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">99.8%</span></td>
+                <th>지점코드</th>
+                <th>관측소명</th>
+                <th>관측 유형</th>
+                <th class="num">데이터 결측률</th>
+                <th class="num">센서 오류 플래그</th>
+                <th>보정 기법</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-station-qc">
+              <tr>
+                <td class="mono">108</td>
+                <td><strong>서울</strong></td>
+                <td>종관 (ASOS)</td>
+                <td class="num mono">0.08%</td>
+                <td class="num mono">12건</td>
+                <td>인접 관측소 공간 내삽 (IDW)</td>
+                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">적합</span></td>
               </tr>
               <tr>
-                <td><strong>시간 풍속 (WS)</strong></td>
-                <td>0.0 ~ 65.0 m/s</td>
-                <td class="num mono">87,600</td>
-                <td class="num mono">87,550</td>
-                <td class="num mono">50 건</td>
-                <td>전후 시각 선형 대치 및 최대순간풍속 비교검증</td>
-                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">99.9%</span></td>
+                <td class="mono">232</td>
+                <td><strong>천안</strong></td>
+                <td>종관 (ASOS)</td>
+                <td class="num mono">0.14%</td>
+                <td class="num mono">18건</td>
+                <td>선형 스플라인 보간 및 이동평균</td>
+                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">적합</span></td>
               </tr>
               <tr>
-                <td><strong>기온 및 습도 (TA/HM)</strong></td>
-                <td>-35.0 ~ 45.0 °C</td>
-                <td class="num mono">87,600</td>
-                <td class="num mono">87,580</td>
-                <td class="num mono">20 건</td>
-                <td>일변화 주기 모델 기반 이동평균 보정</td>
-                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">99.9%</span></td>
+                <td class="mono">637</td>
+                <td><strong>아산배방</strong></td>
+                <td>방재 (AWS)</td>
+                <td class="num mono">0.25%</td>
+                <td class="num mono">24건</td>
+                <td>천안(232) ASOS 연동 복합 대치</td>
+                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">적합</span></td>
               </tr>
               <tr>
-                <td><strong>일 최심신적설 (SD)</strong></td>
-                <td>0.0 ~ 150.0 cm</td>
-                <td class="num mono">87,600</td>
-                <td class="num mono">87,593</td>
-                <td class="num mono">7 건</td>
-                <td>CCTV 실측 및 위성 적설 매핑 데이터 대치</td>
-                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">99.9%</span></td>
+                <td class="mono">133</td>
+                <td><strong>대전</strong></td>
+                <td>종관 (ASOS)</td>
+                <td class="num mono">0.05%</td>
+                <td class="num mono">8건</td>
+                <td>시계열 ARIMA 및 단기 선형 대치</td>
+                <td><span class="badge" style="background:#ecfdf5; color:#065f46;">최적</span></td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
+      <!-- 품질관리 알고리즘 가이드 -->
       <div class="panel">
         <div class="panel-head">
-          <h3>품질관리 필터 및 알고리즘 적용 기준</h3>
+          <h3>품질관리 3단계 필터링 체계</h3>
         </div>
-        <div style="font-size:13px; color:var(--ink-soft); line-height:1.6;">
-          <p>• <strong>한계 검사 (Range Check):</strong> 관측 장비 센서의 물리적 측정 범위를 벗어나는 비정상 이상치는 자동 결측(NaN) 처리 후 대체합니다.</p>
-          <p>• <strong>지속성 검사 (Step/Persistent Check):</strong> 일정 시간 이상 동일 수치가 고정되어 기록되는 센서 고장성 데이터(예: 풍속 0m/s 연속 24시간 이상 등)를 탐지하여 인접 AWS 자료로 치환합니다.</p>
-          <p>• <strong>시뮬레이션 반영:</strong> 본 시스템에서 공기 산정에 활용되는 비작업일수 통계는 모든 QC 단계를 통과하여 결측이 보정된 100% 무결점 시계열 데이터셋만을 기반으로 계산됩니다.</p>
+        <div style="font-size:13px; color:var(--ink-soft); line-height:1.7;">
+          <p><strong>1단계 (물리적 한계 검사):</strong> 센서 측정 한계(예: 풍속 < 0m/s, 습도 > 100%, 기온 < -40°C 등)를 벗어난 데이터는 이상치 플래그(QC-Fail)로 분류하고 즉시 결측 처리합니다.</p>
+          <p><strong>2단계 (지속성 및 스텝 검사):</strong> 관측 센서의 동결이나 통신 단절로 인해 특정 측정값이 비정상적으로 장시간 고정되는 현상을 탐지합니다.</p>
+          <p><strong>3단계 (공간·시간 동시 대치):</strong> 결측치가 2시간 이내인 단기 누락은 전후 시각 이동평균으로 보간하며, 집중호우 결측이나 3시간 이상 지속 누락은 10km 이내 최인접 관측소 자료를 거리역가중(IDW) 방식으로 대치하여 연속 시계열을 완성합니다.</p>
         </div>
       </div>
     </main>
@@ -118,12 +146,41 @@
 <script src="js/seed.js"></script>
 <script src="js/util.js"></script>
 <script src="js/calc.js"></script>
+<script src="js/quality-data.js"></script>
 <script src="js/nav.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   // 사이드바 및 상단바 렌더링
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('기상데이터 품질관리');
+
+  // quality-data.js 연동 렌더링
+  const rawData = (typeof QUALITY_METRICS !== 'undefined') ? QUALITY_METRICS : null;
+  const tbody = document.getElementById('tbl-qc-metrics');
+
+  const defaultMetrics = [
+    { item: '시간 강수량 (RN)', range: '0.0 ~ 150.0 mm/h', total: '87,600', valid: '87,412', err: '188 건', method: '인접 AWS 가중평균 및 삼차 스플라인', score: '99.78%' },
+    { item: '시간 풍속 (WS)', range: '0.0 ~ 65.0 m/s', total: '87,600', valid: '87,550', err: '50 건', method: '단기 선형 보간 및 순간풍속 비교', score: '99.94%' },
+    { item: '기온 (TA)', range: '-35.0 ~ 45.0 °C', total: '87,600', valid: '87,585', err: '15 건', method: '일변화 모델 기반 시계열 대치', score: '99.98%' },
+    { item: '습도 (HM)', range: '0 ~ 100 %', total: '87,600', valid: '87,542', err: '58 건', method: '상대습도-기온 물리 방정식 상관 대치', score: '99.93%' },
+    { item: '최심적설 (SD)', range: '0.0 ~ 150.0 cm', total: '87,600', valid: '87,593', err: '7 건', method: '인근 ASOS 적설계 및 목측 데이터 연계', score: '99.99%' }
+  ];
+
+  const list = (rawData && rawData.metrics) ? rawData.metrics : defaultMetrics;
+
+  if (tbody) {
+    tbody.innerHTML = list.map(m => `
+      <tr>
+        <td><strong>${m.item}</strong></td>
+        <td class="mono" style="font-size:12px;">${m.range}</td>
+        <td class="num mono">${m.total}</td>
+        <td class="num mono">${m.valid}</td>
+        <td class="num mono" style="color:var(--primary); font-weight:600;">${m.err}</td>
+        <td class="muted" style="font-size:12px;">${m.method}</td>
+        <td><span class="badge" style="background:#ecfdf5; color:#065f46; font-weight:600;">${m.score}</span></td>
+      </tr>
+    `).join('');
+  }
 });
 </script>
 </body>
