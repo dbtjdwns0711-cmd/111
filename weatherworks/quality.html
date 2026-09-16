@@ -60,7 +60,7 @@
   .legend-dot.bad { background-color: #ef4444; }
   .legend-dot.none { background-color: #cbd5e1; }
 
-  /* 상단 요약 카드 */
+  /* 상단 4대 요약 카드 */
   .cal-summary-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -90,7 +90,7 @@
     color: #94a3b8;
   }
 
-  /* 달력 그리드 */
+  /* 달력 본체 그리드 */
   .cal-box {
     background: #fff;
     border: 1px solid var(--line, #e2e8f0);
@@ -171,24 +171,24 @@
   .no-data-text {
     font-size: 11px;
     color: #94a3b8;
-    margin-top: 12px;
+    margin-top: 14px;
     text-align: center;
   }
 </style>
 </head>
 <body>
 <div id="app-shell">
-  <!-- 사이드바 (원본 nav.js 자동 주입) -->
+  <!-- 사이드바 (nav.js 자동 주입) -->
   <aside id="sidebar"></aside>
 
   <div class="main">
-    <!-- 상단바 (원본 nav.js 자동 주입) -->
+    <!-- 상단바 (nav.js 자동 주입) -->
     <header id="topbar"></header>
 
     <main id="page-content">
       <div class="page-head">
         <h2>기상데이터 품질관리 및 비작업일수 현황</h2>
-        <div class="desc">수집 데이터 이상치 검정 및 실제 수집된 기상데이터 기반 비작업일수 캘린더 분석입니다.</div>
+        <div class="desc">수집 데이터 이상치 검정 및 현장 실측 기상데이터 기반 비작업일수 캘린더 분석입니다.</div>
       </div>
 
       <!-- 캘린더 패널 -->
@@ -198,16 +198,17 @@
             <div class="filter-item">
               <label>현장</label>
               <select id="sel-site">
-                <option value="gangdong">서울 강동 아파트 신축공사</option>
-                <option value="asan">아산 탕정 도시개발공사</option>
+                <option value="OO지구 공동주택 신축공사" selected>OO지구 공동주택 신축공사</option>
+                <option value="도로공사">도로공사</option>
               </select>
             </div>
             <div class="filter-item">
               <label>공종</label>
               <select id="sel-work">
-                <option value="concrete">콘크리트 타설</option>
-                <option value="earthwork">토공사</option>
-                <option value="steel">철골공사</option>
+                <option value="골조공사 (철근콘크리트 타설)" selected>골조공사 (철근콘크리트 타설)</option>
+                <option value="토공사 터파기 및 흙막이(CIP)">토공사 터파기 및 흙막이(CIP)</option>
+                <option value="부지 정지 및 가설 펜스 설치">부지 정지 및 가설 펜스 설치</option>
+                <option value="지상층 골조공사">지상층 골조공사</option>
               </select>
             </div>
             <div class="filter-item">
@@ -230,7 +231,7 @@
           </div>
         </div>
 
-        <!-- 4대 요약 카드 -->
+        <!-- 4대 요약 지표 카드 -->
         <div class="cal-summary-grid">
           <div class="cal-card">
             <div class="card-tit">수집 완료 일수</div>
@@ -240,7 +241,7 @@
           <div class="cal-card">
             <div class="card-tit">실측 비작업일수 (시간환산)</div>
             <div class="card-val" style="color: #dc2626;" id="stat-nowork-days">0.0<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span></div>
-            <div class="card-desc" id="stat-nowork-hours">비작업 0h</div>
+            <div class="card-desc" id="stat-nowork-hours">비작업 0h 누적</div>
           </div>
           <div class="cal-card">
             <div class="card-tit">기상 영향 시간</div>
@@ -250,13 +251,13 @@
           <div class="cal-card">
             <div class="card-tit">수집 완료 시간대</div>
             <div class="card-val" style="color: #0f172a;" id="stat-total-records">0<span style="font-size: 14px; font-weight: normal; color: #64748b;"> 건</span></div>
-            <div class="card-desc">해당 월 누적 측정치</div>
+            <div class="card-desc">해당 월 실측 누적치</div>
           </div>
         </div>
 
         <!-- 달력 본체 -->
         <div class="cal-box">
-          <div class="cal-header-title" id="calTitleDisplay">2026년 9월 실측 데이터 현황</div>
+          <div class="cal-header-title" id="calTitleDisplay">2026년 9월 · OO지구 공동주택 신축공사 · 골조공사 (철근콘크리트 타설)</div>
           <div class="cal-weekday-grid">
             <div style="color:#dc2626;">일</div>
             <div>월</div>
@@ -270,7 +271,7 @@
         </div>
       </div>
 
-      <!-- 기존 시간별 상태 요약 패널 -->
+      <!-- 시간별 상태 요약 패널 -->
       <div class="panel">
         <div class="panel-head row space-between">
           <h3>시간별 상태 요약</h3>
@@ -322,9 +323,35 @@
 <script src="js/calc.js"></script>
 <script src="js/nav.js"></script>
 <script>
+// 날짜 추출 함수 (JSON 내부 어떤 키/형식이든 YYYY, MM, DD 파싱)
+function parseRecordDate(rec) {
+  if (!rec) return null;
+  let str = rec.tm || rec.time || rec.datetime || rec.date || rec.timestamp || rec.dt || rec.hour;
+  if (!str || typeof str !== 'string') {
+    for (const k of Object.keys(rec)) {
+      if (typeof rec[k] === 'string' && /202[0-9]/.test(rec[k])) {
+        str = rec[k];
+        break;
+      }
+    }
+  }
+  if (!str || typeof str !== 'string') return null;
+
+  const m = str.match(/(20\d\d)[-/.년\s]+(0?[1-9]|1[0-2])[-/.월\s]+(0?[1-9]|[12]\d|3[01])/);
+  if (!m) return null;
+
+  return {
+    fullStr: str,
+    year: parseInt(m[1], 10),
+    month: parseInt(m[2], 10),
+    day: parseInt(m[3], 10),
+    dateKey: `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`
+  };
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof renderSidebar === 'function') renderSidebar();
-  if (typeof renderTopbar === 'function') renderTopbar('기상데이터 품질관리');
+  if (typeof renderTopbar === 'function') renderTopbar('기상데이터 품질관리', { showProjectSelect: true });
 
   let allRecords = [];
 
@@ -343,12 +370,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. 상단 캘린더 초기 렌더링 (기본 2026년 9월)
     buildCalendar(2026, 9, allRecords);
 
-    // 월 선택 변경 이벤트
-    document.getElementById('sel-month').addEventListener('change', (e) => {
+    // 상단 셀렉트박스 변경 이벤트 연동
+    const updateHandler = () => {
       const year = parseInt(document.getElementById('sel-year').value);
-      const month = parseInt(e.target.value);
+      const month = parseInt(document.getElementById('sel-month').value);
       buildCalendar(year, month, allRecords);
-    });
+    };
+
+    document.getElementById('sel-site').addEventListener('change', updateHandler);
+    document.getElementById('sel-work').addEventListener('change', updateHandler);
+    document.getElementById('sel-month').addEventListener('change', updateHandler);
 
   } catch (err) {
     console.error(err);
@@ -368,7 +399,9 @@ function renderTable(records) {
 
   const reversed = [...records].reverse();
   const rowsHtml = reversed.map(rec => {
-    let timeStr = rec.tm || rec.time || rec.datetime || rec.date || rec.timestamp || '-';
+    const p = parseRecordDate(rec);
+    const timeStr = p ? p.fullStr : '-';
+
     const tempVal = rec.feelsLike !== undefined ? `${rec.feelsLike} °C` : (rec.temp !== undefined ? `${rec.temp} °C` : '-');
     const humidityVal = rec.humidity !== undefined ? `${rec.humidity} %` : '-';
     const rainVal = rec.rain1h !== undefined ? `${rec.rain1h} mm` : (rec.rain !== undefined ? `${rec.rain} mm` : '-');
@@ -397,29 +430,31 @@ function renderTable(records) {
   tbody.innerHTML = rowsHtml.slice(0, 100).join('');
 }
 
-// 캘린더 생성 함수 (실제 수집된 데이터만 반영)
+// 캘린더 생성 함수 (실측 데이터만 정확히 매핑)
 function buildCalendar(year, month, records) {
   const grid = document.getElementById('calendarGrid');
   grid.innerHTML = '';
 
-  const siteName = document.getElementById('sel-site').options[document.getElementById('sel-site').selectedIndex].text;
-  const workName = document.getElementById('sel-work').options[document.getElementById('sel-work').selectedIndex].text;
+  const siteSelect = document.getElementById('sel-site');
+  const siteName = siteSelect.options[siteSelect.selectedIndex].text;
+  const workSelect = document.getElementById('sel-work');
+  const workName = workSelect.options[workSelect.selectedIndex].text;
   document.getElementById('calTitleDisplay').textContent = `${year}년 ${month}월 · ${siteName} · ${workName}`;
 
-  // 1. 전달받은 records에서 해당 연/월의 실측 데이터만 일자별(YYYY-MM-DD)로 그룹화
-  const targetPrefix = `${year}-${String(month).padStart(2, '0')}`;
+  // 1. 해당 연/월 실측치 일자별(YYYY-MM-DD) 집계
   const dayStats = {};
   let totalMonthRecords = 0;
 
   records.forEach(rec => {
-    const timeStr = rec.tm || rec.time || rec.datetime || rec.date || '';
-    if (!timeStr.startsWith(targetPrefix)) return;
+    const p = parseRecordDate(rec);
+    if (!p) return;
+    if (p.year !== year || p.month !== month) return;
 
     totalMonthRecords++;
-    const datePart = timeStr.substring(0, 10);
+    const dateKey = p.dateKey;
 
-    if (!dayStats[datePart]) {
-      dayStats[datePart] = {
+    if (!dayStats[dateKey]) {
+      dayStats[dateKey] = {
         maxTemp: -999,
         totalRain: 0,
         maxWind: 0,
@@ -428,22 +463,22 @@ function buildCalendar(year, month, records) {
       };
     }
 
-    const t = rec.feelsLike !== undefined ? Number(rec.feelsLike) : (rec.temp !== undefined ? Number(rec.temp) : 0);
+    const t = rec.feelsLike !== undefined ? Number(rec.feelsLike) : (rec.temp !== undefined ? Number(rec.temp) : null);
     const r = rec.rain1h !== undefined ? Number(rec.rain1h) : (rec.rain !== undefined ? Number(rec.rain) : 0);
     const w = rec.wind !== undefined ? Number(rec.wind) : 0;
 
-    if (t > dayStats[datePart].maxTemp) dayStats[datePart].maxTemp = t;
-    dayStats[datePart].totalRain += r;
-    if (w > dayStats[datePart].maxWind) dayStats[datePart].maxWind = w;
+    if (t !== null && t > dayStats[dateKey].maxTemp) dayStats[dateKey].maxTemp = t;
+    if (!isNaN(r)) dayStats[dateKey].totalRain += r;
+    if (!isNaN(w) && w > dayStats[dateKey].maxWind) dayStats[dateKey].maxWind = w;
 
-    // 비작업 조건 (강우 1.0mm 이상/h 또는 강풍 10m/s 이상 또는 판정 이상)
-    if (r >= 1.0 || w >= 10.0 || rec.status === '이상') {
-      dayStats[datePart].badHours++;
+    // 타설 공종 비작업 판정 기준 (시간당 강우 1mm 이상, 풍속 10m/s 이상, 또는 이상치 검출)
+    if (r >= 1.0 || w >= 10.0 || rec.status === '이상' || rec.status === '오류') {
+      dayStats[dateKey].badHours++;
     }
-    dayStats[datePart].count++;
+    dayStats[dateKey].count++;
   });
 
-  // 2. 달력 일자 계산
+  // 2. 일자 렌더링
   const firstDay = new Date(year, month - 1, 1).getDay();
   const lastDate = new Date(year, month, 0).getDate();
 
@@ -454,23 +489,22 @@ function buildCalendar(year, month, records) {
     grid.appendChild(emptyCell);
   }
 
-  let totalCollectedDays = Object.keys(dayStats).length;
+  const collectedDaysCount = Object.keys(dayStats).length;
   let totalBadHours = 0;
   let totalBadDaysCount = 0;
 
-  // 1일부터 말일까지 셀 생성
   for (let d = 1; d <= lastDate; d++) {
     const dayDate = new Date(year, month - 1, d);
     const dayOfWeek = dayDate.getDay();
-    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
-    const stat = dayStats[dateStr];
-    const hasData = !!stat; // 실제 데이터 존재 여부
+    const stat = dayStats[dateKey];
+    const hasData = !!stat;
 
     const cell = document.createElement('div');
     cell.className = 'cal-cell';
 
-    // 주말 휴무 배지
+    // 주말 휴무 뱃지
     let weekendBadge = '';
     let numClass = '';
     if (dayOfWeek === 0) {
@@ -485,11 +519,15 @@ function buildCalendar(year, month, records) {
     let dotHtml = '<span class="legend-dot none"></span>';
 
     if (hasData) {
-      // 실제 데이터가 존재하는 날짜만 계산 및 출력
       const maxTemp = stat.maxTemp > -900 ? stat.maxTemp.toFixed(1) : '-';
       const totalRain = stat.totalRain.toFixed(1);
       const maxWind = stat.maxWind.toFixed(1);
-      const badHours = stat.badHours;
+
+      // 실측 기준 비작업 판단
+      let badHours = stat.badHours;
+      if (badHours === 0 && stat.totalRain >= 5.0) {
+        badHours = stat.totalRain >= 10.0 ? 8 : 4;
+      }
 
       const isBadDay = badHours > 0;
       if (isBadDay) {
@@ -500,12 +538,9 @@ function buildCalendar(year, month, records) {
         dotHtml = '<span class="legend-dot ok"></span>';
       }
 
-      // 비작업일수 환산 (4시간 = 0.5일, 8시간 = 1일)
+      // 0.5일 또는 1일 환산 표기
       let badDaysFraction = (badHours / 8);
-      let badDaysText = '';
-      if (badHours === 4) badDaysText = '0.5일';
-      else if (badHours >= 8) badDaysText = '1일';
-      else badDaysText = `${badDaysFraction.toFixed(1)}일`;
+      let badDaysText = (badHours === 4) ? '0.5일' : (badHours >= 8 ? '1일' : `${badDaysFraction.toFixed(1)}일`);
 
       const noworkTag = isBadDay 
         ? `<div class="cell-nowork-tag">비작업 ${badHours}h (${badDaysText})</div>` 
@@ -520,7 +555,7 @@ function buildCalendar(year, month, records) {
         ${noworkTag}
       `;
     } else {
-      // 실측 데이터가 없는 날짜는 임의 데이터 없이 미수집 표시
+      // 실측 데이터가 없는 날짜는 임의 데이터 없이 깔끔하게 미수집 처리
       weatherHtml = `<div class="no-data-text">-<br><span style="font-size:10px;">미수집</span></div>`;
     }
 
@@ -540,9 +575,9 @@ function buildCalendar(year, month, records) {
     grid.appendChild(cell);
   }
 
-  // 상단 카드 실측치 기준 통계 업데이트
-  document.getElementById('stat-collected-days').innerHTML = `${totalCollectedDays}<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span>`;
-  document.getElementById('stat-collected-desc').textContent = `총 ${lastDate}일 중 ${totalCollectedDays}일 실측 완료`;
+  // 상단 요약 카드 실측치 자동 갱신
+  document.getElementById('stat-collected-days').innerHTML = `${collectedDaysCount}<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span>`;
+  document.getElementById('stat-collected-desc').textContent = `총 ${lastDate}일 중 ${collectedDaysCount}일 실측 완료`;
 
   const totalBadDays = (totalBadHours / 8).toFixed(1);
   document.getElementById('stat-nowork-days').innerHTML = `${totalBadDays}<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span>`;
