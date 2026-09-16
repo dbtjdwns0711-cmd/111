@@ -6,7 +6,7 @@
 <title>기상데이터 품질관리 및 비작업일수 · WeatherWorks</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
-  /* 캘린더 전용 스타일 정의 */
+  /* 캘린더 전용 스타일 */
   .cal-filter-bar {
     display: flex;
     justify-content: space-between;
@@ -58,8 +58,9 @@
   }
   .legend-dot.ok { background-color: #10b981; }
   .legend-dot.bad { background-color: #ef4444; }
+  .legend-dot.none { background-color: #cbd5e1; }
 
-  /* 상단 4대 요약 카드 */
+  /* 상단 요약 카드 */
   .cal-summary-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -89,7 +90,7 @@
     color: #94a3b8;
   }
 
-  /* 캘린더 그리드 */
+  /* 달력 그리드 */
   .cal-box {
     background: #fff;
     border: 1px solid var(--line, #e2e8f0);
@@ -122,7 +123,7 @@
     border: 1px solid var(--line, #e2e8f0);
     border-radius: 8px;
     padding: 10px;
-    min-height: 112px;
+    min-height: 115px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -146,8 +147,7 @@
     font-weight: 700;
     color: #1e293b;
   }
-  .cell-num.sun { color: #dc2626; }
-  .cell-num.sat { color: #dc2626; }
+  .cell-num.sun, .cell-num.sat { color: #dc2626; }
   .cell-badge {
     font-size: 10px;
     color: #64748b;
@@ -168,26 +168,31 @@
     font-size: 11px;
     margin-top: 4px;
   }
+  .no-data-text {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 12px;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
 <div id="app-shell">
-  <!-- 사이드바 (원본 100% 유지) -->
+  <!-- 사이드바 (원본 nav.js 자동 주입) -->
   <aside id="sidebar"></aside>
 
   <div class="main">
-    <!-- 상단바 (원본 100% 유지) -->
+    <!-- 상단바 (원본 nav.js 자동 주입) -->
     <header id="topbar"></header>
 
     <main id="page-content">
       <div class="page-head">
         <h2>기상데이터 품질관리 및 비작업일수 현황</h2>
-        <div class="desc">수집 데이터 이상치 검정 및 실측 기상데이터 기반 비작업일수 캘린더 분석입니다.</div>
+        <div class="desc">수집 데이터 이상치 검정 및 실제 수집된 기상데이터 기반 비작업일수 캘린더 분석입니다.</div>
       </div>
 
-      <!-- [새로 추가된 캘린더 패널] -->
+      <!-- 캘린더 패널 -->
       <div class="panel">
-        <!-- 필터 컨트롤 -->
         <div class="cal-filter-bar">
           <div class="filter-controls">
             <div class="filter-item">
@@ -221,36 +226,37 @@
           <div class="cal-legend">
             <span><span class="legend-dot ok"></span>작업 가능</span>
             <span><span class="legend-dot bad"></span>작업 불가능</span>
+            <span><span class="legend-dot none"></span>데이터 미수집</span>
           </div>
         </div>
 
         <!-- 4대 요약 카드 -->
         <div class="cal-summary-grid">
           <div class="cal-card">
-            <div class="card-tit">예상 작업가능일</div>
-            <div class="card-val" style="color: #059669;" id="stat-work-days">16.4<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span></div>
-            <div class="card-desc">총 30일 · 공휴일·휴무 11일 제외</div>
+            <div class="card-tit">수집 완료 일수</div>
+            <div class="card-val" style="color: #059669;" id="stat-collected-days">0<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span></div>
+            <div class="card-desc" id="stat-collected-desc">실제 기상데이터 수집 완료</div>
           </div>
           <div class="cal-card">
-            <div class="card-tit">예상 비작업일수 (시간환산)</div>
-            <div class="card-val" style="color: #dc2626;" id="stat-nowork-days">2.6<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span></div>
-            <div class="card-desc" id="stat-nowork-hours">비작업 13h / 예정 152h</div>
+            <div class="card-tit">실측 비작업일수 (시간환산)</div>
+            <div class="card-val" style="color: #dc2626;" id="stat-nowork-days">0.0<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span></div>
+            <div class="card-desc" id="stat-nowork-hours">비작업 0h</div>
           </div>
           <div class="cal-card">
             <div class="card-tit">기상 영향 시간</div>
-            <div class="card-val" style="color: #0f172a;" id="stat-impact-hours">13<span style="font-size: 14px; font-weight: normal; color: #64748b;"> 시간</span></div>
-            <div class="card-desc" id="stat-impact-days">작업불가 2일</div>
+            <div class="card-val" style="color: #0f172a;" id="stat-impact-hours">0<span style="font-size: 14px; font-weight: normal; color: #64748b;"> 시간</span></div>
+            <div class="card-desc" id="stat-impact-days">작업불가 0일</div>
           </div>
           <div class="cal-card">
-            <div class="card-tit">작업시간대 최적화 절감</div>
-            <div class="card-val" style="color: #0f172a;">0.25<span style="font-size: 14px; font-weight: normal; color: #64748b;"> 일</span></div>
-            <div class="card-desc">총 30일 중 권장 시간대 적용 시</div>
+            <div class="card-tit">수집 완료 시간대</div>
+            <div class="card-val" style="color: #0f172a;" id="stat-total-records">0<span style="font-size: 14px; font-weight: normal; color: #64748b;"> 건</span></div>
+            <div class="card-desc">해당 월 누적 측정치</div>
           </div>
         </div>
 
         <!-- 달력 본체 -->
         <div class="cal-box">
-          <div class="cal-header-title" id="calTitleDisplay">2026년 9월 · 서울 강동 아파트 신축공사 · 콘크리트 타설</div>
+          <div class="cal-header-title" id="calTitleDisplay">2026년 9월 실측 데이터 현황</div>
           <div class="cal-weekday-grid">
             <div style="color:#dc2626;">일</div>
             <div>월</div>
@@ -260,9 +266,7 @@
             <div>금</div>
             <div style="color:#dc2626;">토</div>
           </div>
-          <div class="cal-grid" id="calendarGrid">
-            <!-- 자바스크립트로 일자 셀 생성 -->
-          </div>
+          <div class="cal-grid" id="calendarGrid"></div>
         </div>
       </div>
 
@@ -282,7 +286,7 @@
         </div>
       </div>
 
-      <!-- 기존 기상데이터 품질관리 내역 패널 (최신순 가로 1행) -->
+      <!-- 기상데이터 품질관리 내역 (실측 최신순 가로 1행) -->
       <div class="panel">
         <div class="panel-head row space-between">
           <h3>기상데이터 품질관리 내역 (실측 최신순)</h3>
@@ -336,10 +340,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. 하단 최신 데이터 테이블 렌더링
     renderTable(allRecords);
 
-    // 2. 상단 캘린더 렌더링 (기본 2026년 9월)
+    // 2. 상단 캘린더 초기 렌더링 (기본 2026년 9월)
     buildCalendar(2026, 9, allRecords);
 
-    // 연/월 셀렉트 변경 이벤트 연동
+    // 월 선택 변경 이벤트
     document.getElementById('sel-month').addEventListener('change', (e) => {
       const year = parseInt(document.getElementById('sel-year').value);
       const month = parseInt(e.target.value);
@@ -393,19 +397,26 @@ function renderTable(records) {
   tbody.innerHTML = rowsHtml.slice(0, 100).join('');
 }
 
-// 캘린더 생성 및 일별 비작업 판정 함수
+// 캘린더 생성 함수 (실제 수집된 데이터만 반영)
 function buildCalendar(year, month, records) {
   const grid = document.getElementById('calendarGrid');
   grid.innerHTML = '';
 
-  document.getElementById('calTitleDisplay').textContent = `${year}년 ${month}월 · 서울 강동 아파트 신축공사 · 콘크리트 타설`;
+  const siteName = document.getElementById('sel-site').options[document.getElementById('sel-site').selectedIndex].text;
+  const workName = document.getElementById('sel-work').options[document.getElementById('sel-work').selectedIndex].text;
+  document.getElementById('calTitleDisplay').textContent = `${year}년 ${month}월 · ${siteName} · ${workName}`;
 
-  // 1. records 데이터를 일자별(YYYY-MM-DD)로 그룹화 및 집계
+  // 1. 전달받은 records에서 해당 연/월의 실측 데이터만 일자별(YYYY-MM-DD)로 그룹화
+  const targetPrefix = `${year}-${String(month).padStart(2, '0')}`;
   const dayStats = {};
+  let totalMonthRecords = 0;
+
   records.forEach(rec => {
     const timeStr = rec.tm || rec.time || rec.datetime || rec.date || '';
-    if (!timeStr) return;
-    const datePart = timeStr.substring(0, 10); // "2026-09-13"
+    if (!timeStr.startsWith(targetPrefix)) return;
+
+    totalMonthRecords++;
+    const datePart = timeStr.substring(0, 10);
 
     if (!dayStats[datePart]) {
       dayStats[datePart] = {
@@ -417,74 +428,49 @@ function buildCalendar(year, month, records) {
       };
     }
 
-    const t = rec.feelsLike !== undefined ? rec.feelsLike : (rec.temp || 0);
-    const r = rec.rain1h !== undefined ? rec.rain1h : (rec.rain || 0);
-    const w = rec.wind || 0;
+    const t = rec.feelsLike !== undefined ? Number(rec.feelsLike) : (rec.temp !== undefined ? Number(rec.temp) : 0);
+    const r = rec.rain1h !== undefined ? Number(rec.rain1h) : (rec.rain !== undefined ? Number(rec.rain) : 0);
+    const w = rec.wind !== undefined ? Number(rec.wind) : 0;
 
     if (t > dayStats[datePart].maxTemp) dayStats[datePart].maxTemp = t;
     dayStats[datePart].totalRain += r;
     if (w > dayStats[datePart].maxWind) dayStats[datePart].maxWind = w;
 
-    // 콘크리트 타설 기준: 강우(1mm 이상/h) 또는 강풍(7m/s 이상) 발생 시간 체크
-    if (r >= 1.0 || w >= 7.0 || rec.status === '이상') {
+    // 비작업 조건 (강우 1.0mm 이상/h 또는 강풍 10m/s 이상 또는 판정 이상)
+    if (r >= 1.0 || w >= 10.0 || rec.status === '이상') {
       dayStats[datePart].badHours++;
     }
     dayStats[datePart].count++;
   });
 
   // 2. 달력 일자 계산
-  const firstDay = new Date(year, month - 1, 1).getDay(); // 0(일) ~ 6(토)
+  const firstDay = new Date(year, month - 1, 1).getDay();
   const lastDate = new Date(year, month, 0).getDate();
 
-  // 첫 날 이전 빈칸 채우기
+  // 첫날 이전 공백 셀
   for (let i = 0; i < firstDay; i++) {
     const emptyCell = document.createElement('div');
     emptyCell.className = 'cal-cell empty';
     grid.appendChild(emptyCell);
   }
 
+  let totalCollectedDays = Object.keys(dayStats).length;
   let totalBadHours = 0;
   let totalBadDaysCount = 0;
 
-  // 1일부터 말일까지 셀 렌더링
+  // 1일부터 말일까지 셀 생성
   for (let d = 1; d <= lastDate; d++) {
     const dayDate = new Date(year, month - 1, d);
     const dayOfWeek = dayDate.getDay();
-    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
     const stat = dayStats[dateStr];
-    const hasData = !!stat;
-
-    // 기본 시뮬레이션 수치 (수집 데이터 우선 연동)
-    let maxTemp = hasData && stat.maxTemp > -900 ? stat.maxTemp.toFixed(1) : (24 + (d % 7)).toFixed(1);
-    let totalRain = hasData ? stat.totalRain.toFixed(1) : (d === 1 ? '23.1' : (d === 16 ? '7.0' : (d === 17 ? '8.1' : (d === 18 ? '10.8' : '0.0'))));
-    let maxWind = hasData ? stat.maxWind.toFixed(1) : (4 + (d % 3)).toFixed(1);
-
-    // 비작업 판단 (실측 데이터의 불량 시간 또는 데모 기준)
-    let badHours = hasData ? stat.badHours : 0;
-    if (!hasData) {
-      if (d === 1) badHours = 8;
-      if (d === 18) badHours = 5;
-    }
-
-    const isBadDay = badHours > 0;
-    if (isBadDay) {
-      totalBadHours += badHours;
-      totalBadDaysCount++;
-    }
-
-    // 비작업일수 환산 (예: 4시간 = 0.5일, 8시간 = 1일, 5시간 = 0.625일)
-    let badDaysFraction = (badHours / 8);
-    let badDaysText = '';
-    if (badHours === 4) badDaysText = '0.5일';
-    else if (badHours === 8) badDaysText = '1일';
-    else badDaysText = `${badDaysFraction.toFixed(3).replace(/\.?0+$/, '')}일`;
+    const hasData = !!stat; // 실제 데이터 존재 여부
 
     const cell = document.createElement('div');
     cell.className = 'cal-cell';
 
-    // 주말 휴무 뱃지
+    // 주말 휴무 배지
     let weekendBadge = '';
     let numClass = '';
     if (dayOfWeek === 0) {
@@ -495,37 +481,77 @@ function buildCalendar(year, month, records) {
       weekendBadge = `<div style="text-align:right;"><span class="cell-badge">휴무</span><div style="font-size:10px; color:#dc2626; margin-top:2px;">토요일</div></div>`;
     }
 
-    const dotClass = isBadDay ? 'bad' : 'ok';
-    const noworkHtml = isBadDay 
-      ? `<div class="cell-nowork-tag">비작업 ${badHours}h (${badDaysText})</div>` 
-      : '';
+    let weatherHtml = '';
+    let dotHtml = '<span class="legend-dot none"></span>';
+
+    if (hasData) {
+      // 실제 데이터가 존재하는 날짜만 계산 및 출력
+      const maxTemp = stat.maxTemp > -900 ? stat.maxTemp.toFixed(1) : '-';
+      const totalRain = stat.totalRain.toFixed(1);
+      const maxWind = stat.maxWind.toFixed(1);
+      const badHours = stat.badHours;
+
+      const isBadDay = badHours > 0;
+      if (isBadDay) {
+        totalBadHours += badHours;
+        totalBadDaysCount++;
+        dotHtml = '<span class="legend-dot bad"></span>';
+      } else {
+        dotHtml = '<span class="legend-dot ok"></span>';
+      }
+
+      // 비작업일수 환산 (4시간 = 0.5일, 8시간 = 1일)
+      let badDaysFraction = (badHours / 8);
+      let badDaysText = '';
+      if (badHours === 4) badDaysText = '0.5일';
+      else if (badHours >= 8) badDaysText = '1일';
+      else badDaysText = `${badDaysFraction.toFixed(1)}일`;
+
+      const noworkTag = isBadDay 
+        ? `<div class="cell-nowork-tag">비작업 ${badHours}h (${badDaysText})</div>` 
+        : '';
+
+      weatherHtml = `
+        <div class="cell-weather-info">
+          <div>최고 ${maxTemp}°C</div>
+          <div>강수 ${totalRain}mm</div>
+          <div>풍속 ${maxWind}m/s</div>
+        </div>
+        ${noworkTag}
+      `;
+    } else {
+      // 실측 데이터가 없는 날짜는 임의 데이터 없이 미수집 표시
+      weatherHtml = `<div class="no-data-text">-<br><span style="font-size:10px;">미수집</span></div>`;
+    }
 
     cell.innerHTML = `
       <div class="cell-head">
         <div class="cell-num ${numClass}">${d}</div>
         <div style="display:flex; align-items:center; gap:6px;">
           ${weekendBadge}
-          <span class="legend-dot ${dotClass}" style="margin-left: 4px;"></span>
+          ${dotHtml}
         </div>
       </div>
       <div>
-        <div class="cell-weather-info">
-          <div>최고 ${maxTemp}°C</div>
-          <div>강수 ${totalRain}mm</div>
-          <div>풍속 ${maxWind}m/s</div>
-        </div>
-        ${noworkHtml}
+        ${weatherHtml}
       </div>
     `;
 
     grid.appendChild(cell);
   }
 
-  // 상단 카드 통계 수치 업데이트
-  document.getElementById('stat-nowork-hours').textContent = `비작업 ${totalBadHours}h / 예정 152h`;
+  // 상단 카드 실측치 기준 통계 업데이트
+  document.getElementById('stat-collected-days').innerHTML = `${totalCollectedDays}<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span>`;
+  document.getElementById('stat-collected-desc').textContent = `총 ${lastDate}일 중 ${totalCollectedDays}일 실측 완료`;
+
+  const totalBadDays = (totalBadHours / 8).toFixed(1);
+  document.getElementById('stat-nowork-days').innerHTML = `${totalBadDays}<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span>`;
+  document.getElementById('stat-nowork-hours').textContent = `실측 비작업 ${totalBadHours}h 누적`;
+
   document.getElementById('stat-impact-hours').innerHTML = `${totalBadHours}<span style="font-size: 14px; font-weight: normal; color: #64748b;"> 시간</span>`;
-  document.getElementById('stat-impact-days').textContent = `작업불가 ${totalBadDaysCount}일`;
-  document.getElementById('stat-nowork-days').innerHTML = `${(totalBadHours / 8).toFixed(1)}<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span>`;
+  document.getElementById('stat-impact-days').textContent = `비작업 발생 ${totalBadDaysCount}일`;
+
+  document.getElementById('stat-total-records').innerHTML = `${totalMonthRecords}<span style="font-size: 14px; font-weight: normal; color: #64748b;"> 건</span>`;
 }
 </script>
 </body>
