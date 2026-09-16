@@ -1,253 +1,49 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>기상데이터 품질관리 - WeatherWorks</title>
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: #f8fafc;
-      color: #1e293b;
-    }
-
-    /* 다른 탭과 동일한 240px 다크 사이드바 고정 */
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      width: 240px;
-      background-color: #1e293b;
-      color: #94a3b8;
-      display: flex;
-      flex-direction: column;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-    .sidebar-header {
-      padding: 24px 20px 16px 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .brand-sub {
-      font-size: 10px;
-      font-weight: 700;
-      color: #64748b;
-      letter-spacing: 0.05em;
-      margin-bottom: 4px;
-    }
-    .brand-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 4px;
-    }
-    .brand-desc {
-      font-size: 11px;
-      color: #94a3b8;
-    }
-    .sidebar-menu {
-      flex: 1;
-      padding: 12px 0;
-    }
-    .menu-group {
-      margin-bottom: 14px;
-    }
-    .menu-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: #64748b;
-      padding: 8px 20px 4px 20px;
-    }
-    .menu-item {
-      display: block;
-      padding: 8px 12px;
-      margin: 2px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      color: #94a3b8;
-      text-decoration: none;
-      transition: all 0.15s ease-in-out;
-    }
-    .menu-item:hover {
-      color: #ffffff;
-      background-color: rgba(255, 255, 255, 0.06);
-    }
-    /* 현재 탭(기상데이터 품질관리) 활성화 파란색 버튼 */
-    .menu-item.active {
-      color: #ffffff;
-      background-color: #2563eb;
-      font-weight: 600;
-    }
-    .sidebar-footer {
-      padding: 16px 20px;
-      font-size: 11px;
-      line-height: 1.5;
-      color: #475569;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    /* 메인 콘텐츠 영역 (사이드바 폭 240px 만큼 우측 마진 확보) */
-    .main-content {
-      margin-left: 240px;
-      min-height: 100vh;
-      padding: 24px 32px;
-      background-color: #f8fafc;
-    }
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-    .page-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: #0f172a;
-      margin: 0;
-    }
-    .system-status {
-      font-size: 13px;
-      color: #64748b;
-    }
-    .status-dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: #10b981;
-      margin-right: 6px;
-    }
-
-    /* 카드 및 테이블 공통 스타일 */
-    .card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-    }
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .card-title {
-      font-weight: 700;
-      font-size: 15px;
-      color: #1e293b;
-    }
-    .progress-bar-bg {
-      height: 12px;
-      background: #e2e8f0;
-      border-radius: 6px;
-      overflow: hidden;
-      display: flex;
-    }
-    .table-responsive {
-      overflow-x: auto;
-    }
-    .data-table {
-      width: 100%;
-      text-align: left;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    .data-table th {
-      background: #f8fafc;
-      padding: 12px 14px;
-      border-bottom: 1px solid #e2e8f0;
-      color: #475569;
-      font-weight: 600;
-    }
-    .data-table td {
-      padding: 12px 14px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기상데이터 품질관리 · WeatherWorks</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="layout">
-    <!-- 좌측 고정 사이드바 탭 (다른 탭들과 100% 동일) -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="brand-sub">WEATHERWORKS</div>
-        <div class="brand-title">WeatherWorks</div>
-        <div class="brand-desc">건설공사 비작업일수·공사기간 산정</div>
-      </div>
-      
-      <nav class="sidebar-menu">
-        <div class="menu-group">
-          <div class="menu-title">현황</div>
-          <a href="index.html" class="menu-item">현황 관리</a>
-          <a href="quantity.html" class="menu-item">공사 물량·생산성 산정</a>
-          <a href="stations.html" class="menu-item">구간별 관측지점</a>
-        </div>
+<div id="app-shell">
+  <!-- 사이드바 (다른 탭과 100% 동일하게 자동 주입) -->
+  <aside id="sidebar"></aside>
 
-        <div class="menu-group">
-          <div class="menu-title">공사기간 산정</div>
-          <a href="schedule.html" class="menu-item">총괄·결과·Timeline</a>
-        </div>
+  <div class="main">
+    <!-- 상단바 (다른 탭과 100% 동일하게 자동 주입) -->
+    <header id="topbar"></header>
 
-        <div class="menu-group">
-          <div class="menu-title">작업일수 산정</div>
-          <a href="duration-workdays.html" class="menu-item">비작업일수 산정·예측정확도</a>
-        </div>
-
-        <div class="menu-group">
-          <div class="menu-title">데이터 관리</div>
-          <a href="quality.html" class="menu-item active">기상데이터 품질관리</a>
-          <a href="data.html" class="menu-item">공정표 Import</a>
-          <a href="duration-weather.html" class="menu-item">데이터 관리</a>
-          <a href="admin.html" class="menu-item">기상 판정 기준·공휴일</a>
-        </div>
-      </nav>
-
-      <div class="sidebar-footer">
-        기상데이터는 기상청 직접 연동 또는 현장 실측 및 공유 기상정보에 따라 달라질 수 있습니다.
-      </div>
-    </aside>
-
-    <!-- 우측 메인 콘텐츠 영역 -->
-    <main class="main-content">
-      <div class="top-bar">
-        <h1 class="page-title">기상데이터 품질관리</h1>
-        <div class="system-status">
-          <span class="status-dot"></span>시스템 상태: <strong style="color: #10b981;">정상 가동중</strong>
-        </div>
+    <main id="page-content">
+      <div class="page-head">
+        <h2>기상데이터 품질관리</h2>
+        <div class="desc">수집 데이터 이상치 검정 및 시간대별 품질 관리 내역입니다.</div>
       </div>
 
-      <!-- 상단 시간별 상태 요약 바 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">시간별 상태 요약</div>
-          <div id="rateSummary" style="font-size: 12px; color: #64748b;">수집률 74.9% · 총 960개 시간대</div>
+      <!-- 시간별 상태 요약 패널 -->
+      <div class="panel">
+        <div class="panel-head row space-between">
+          <h3>시간별 상태 요약</h3>
+          <span class="muted" style="font-size: 12px;" id="rateSummary">수집률 74.9% · 총 960개 시간대</span>
         </div>
-        <div class="progress-bar-bg">
+        <div style="height: 12px; background: var(--line, #e2e8f0); border-radius: 6px; overflow: hidden; display: flex; margin-bottom: 8px;">
           <div id="barNormal" style="background: #10b981; width: 74.9%; height: 100%;"></div>
           <div id="barCaution" style="background: #f59e0b; width: 0%; height: 100%;"></div>
           <div id="barError" style="background: #ef4444; width: 25.1%; height: 100%;"></div>
         </div>
-        <div id="countsSummary" style="font-size: 12px; color: #64748b; text-align: right; margin-top: 8px;">
+        <div id="countsSummary" class="muted" style="font-size: 12px; text-align: right;">
           기온 11건 · 습도 11건 · 강수량 8건 · 풍속 13건
         </div>
       </div>
 
-      <!-- 수집 데이터 품질관리 내역 (최신순 가로 1행) -->
-      <div class="card">
-        <div class="card-header" style="margin-bottom: 16px;">
-          <div class="card-title">기상데이터 품질관리 내역</div>
+      <!-- 기상데이터 품질관리 내역 패널 -->
+      <div class="panel">
+        <div class="panel-head row space-between">
+          <h3>기상데이터 품질관리 내역</h3>
         </div>
-        <div class="table-responsive">
-          <table class="data-table">
+        <div class="table-wrap">
+          <table class="table">
             <thead>
               <tr>
                 <th>측정일시</th>
@@ -261,7 +57,7 @@
             </thead>
             <tbody id="qualityTableBody">
               <tr>
-                <td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">데이터를 불러오는 중입니다...</td>
+                <td colspan="7" style="text-align: center; padding: 30px;" class="muted">데이터를 불러오는 중입니다...</td>
               </tr>
             </tbody>
           </table>
@@ -269,85 +65,90 @@
       </div>
     </main>
   </div>
+</div>
 
-  <script src="js/nav.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const res = await fetch('data/quality-data.json');
-        if (!res.ok) throw new Error('데이터 파일을 불러올 수 없습니다.');
-        const rawJson = await res.json();
+<script src="js/db.js"></script>
+<script src="js/seed.js"></script>
+<script src="js/util.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/nav.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // 사이드바 및 상단바 자동 렌더링
+  if (typeof renderSidebar === 'function') renderSidebar();
+  if (typeof renderTopbar === 'function') renderTopbar('기상데이터 품질관리');
 
-        let records = [];
-        if (Array.isArray(rawJson)) {
-          records = rawJson;
-        } else if (rawJson.records && Array.isArray(rawJson.records)) {
-          records = rawJson.records;
-        } else if (rawJson.data && Array.isArray(rawJson.data)) {
-          records = rawJson.data;
-        }
+  try {
+    const res = await fetch('data/quality-data.json');
+    if (!res.ok) throw new Error('파일을 불러올 수 없습니다.');
+    const rawJson = await res.json();
 
-        const tbody = document.getElementById('qualityTableBody');
-        if (!records || records.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">수집된 데이터가 없습니다.</td></tr>';
-          return;
-        }
+    let records = [];
+    if (Array.isArray(rawJson)) {
+      records = rawJson;
+    } else if (rawJson.records && Array.isArray(rawJson.records)) {
+      records = rawJson.records;
+    } else if (rawJson.data && Array.isArray(rawJson.data)) {
+      records = rawJson.data;
+    }
 
-        // 최신 데이터(9월 13일)가 맨 위에 오도록 역순 복사
-        const reversedRecords = [...records].reverse();
+    const tbody = document.getElementById('qualityTableBody');
+    if (!records || records.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;" class="muted">수집된 데이터가 없습니다.</td></tr>';
+      return;
+    }
 
-        const rowsHtml = reversedRecords.map(rec => {
-          // 측정일시 탐색
-          let timeStr = rec.tm || rec.time || rec.datetime || rec.date || rec.timestamp || rec.dt || rec.hour;
-          if (!timeStr) {
-            for (const key of Object.keys(rec)) {
-              if (typeof rec[key] === 'string' && (rec[key].includes('2026-') || rec[key].includes('2025-'))) {
-                timeStr = rec[key];
-                break;
-              }
-            }
+    // 최신 데이터(9월 13일)부터 역순 정렬
+    const reversedRecords = [...records].reverse();
+
+    const rowsHtml = reversedRecords.map(rec => {
+      // 측정일시 탐색
+      let timeStr = rec.tm || rec.time || rec.datetime || rec.date || rec.timestamp || rec.dt || rec.hour;
+      if (!timeStr) {
+        for (const key of Object.keys(rec)) {
+          if (typeof rec[key] === 'string' && (rec[key].includes('2026-') || rec[key].includes('2025-'))) {
+            timeStr = rec[key];
+            break;
           }
-          if (!timeStr) timeStr = '-';
-
-          // 4대 기상 요소
-          const tempVal = rec.feelsLike !== undefined ? `${rec.feelsLike} °C` : (rec.temp !== undefined ? `${rec.temp} °C` : '-');
-          const humidityVal = rec.humidity !== undefined ? `${rec.humidity} %` : '-';
-          const rainVal = rec.rain1h !== undefined ? `${rec.rain1h} mm` : (rec.rain !== undefined ? `${rec.rain} mm` : '-');
-          const windVal = rec.wind !== undefined ? `${rec.wind} m/s` : '-';
-
-          const status = rec.status || '정상';
-          const reason = rec.reason || '10년 같은 월 기준 범위 내';
-
-          const badgeColor = status === '정상' ? '#059669' : (status === '주의' ? '#d97706' : '#dc2626');
-          const badgeBg = status === '정상' ? '#e6f9f0' : (status === '주의' ? '#fef3c7' : '#fee2e2');
-
-          return `
-            <tr>
-              <td style="font-weight: 500;">${timeStr}</td>
-              <td style="font-weight: 600;">${tempVal}</td>
-              <td>${humidityVal}</td>
-              <td>${rainVal}</td>
-              <td>${windVal}</td>
-              <td>
-                <span style="display:inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: ${badgeColor}; background: ${badgeBg};">
-                  ${status}
-                </span>
-              </td>
-              <td style="color: #64748b;">${reason}</td>
-            </tr>
-          `;
-        });
-
-        // 최신순 상위 100건 표시
-        tbody.innerHTML = rowsHtml.slice(0, 100).join('');
-
-      } catch (err) {
-        console.error(err);
-        document.getElementById('qualityTableBody').innerHTML = `
-          <tr><td colspan="7" style="text-align:center; color:#ef4444; padding:30px;">데이터 로드 오류: ${err.message}</td></tr>
-        `;
+        }
       }
+      if (!timeStr) timeStr = '-';
+
+      // 4대 기상 요소
+      const tempVal = rec.feelsLike !== undefined ? `${rec.feelsLike} °C` : (rec.temp !== undefined ? `${rec.temp} °C` : '-');
+      const humidityVal = rec.humidity !== undefined ? `${rec.humidity} %` : '-';
+      const rainVal = rec.rain1h !== undefined ? `${rec.rain1h} mm` : (rec.rain !== undefined ? `${rec.rain} mm` : '-');
+      const windVal = rec.wind !== undefined ? `${rec.wind} m/s` : '-';
+
+      const status = rec.status || '정상';
+      const reason = rec.reason || '10년 같은 월 기준 범위 내';
+
+      const badgeStyle = status === '정상' 
+        ? 'background:#dcfce7; color:#15803d;' 
+        : (status === '주의' ? 'background:#fef9c3; color:#a16207;' : 'background:#fee2e2; color:#b91c1c;');
+
+      return `
+        <tr>
+          <td class="mono">${timeStr}</td>
+          <td class="num mono"><strong>${tempVal}</strong></td>
+          <td class="num mono">${humidityVal}</td>
+          <td class="num mono">${rainVal}</td>
+          <td class="num mono">${windVal}</td>
+          <td><span class="badge" style="${badgeStyle}">${status}</span></td>
+          <td class="muted">${reason}</td>
+        </tr>
+      `;
     });
-  </script>
+
+    tbody.innerHTML = rowsHtml.slice(0, 100).join('');
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('qualityTableBody').innerHTML = `
+      <tr><td colspan="7" style="text-align:center; color:#ef4444; padding:30px;">데이터 로드 오류: ${err.message}</td></tr>
+    `;
+  }
+});
+</script>
 </body>
 </html>
