@@ -3,428 +3,275 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WeatherWorks - 기상데이터 품질관리</title>
+  <title>기상데이터 품질관리 · WeatherWorks</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .quality-container {
-      padding: 24px;
-      max-width: 1400px;
-      margin: 0 auto;
+    .quality-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
     }
-    .status-card {
+    .summary-card {
       background: #fff;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 24px;
+      padding: 16px 20px;
     }
-    .status-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .status-card-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #1e293b;
-    }
-    .status-rate {
+    .summary-card .label {
       font-size: 13px;
       color: #64748b;
+      margin-bottom: 8px;
     }
-    .progress-bar-container {
-      width: 100%;
-      height: 14px;
-      background-color: #f1f5f9;
-      border-radius: 7px;
-      overflow: hidden;
-      display: flex;
-      margin-bottom: 12px;
+    .summary-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0f172a;
     }
-    .progress-bar-segment {
-      height: 100%;
-      transition: width 0.3s ease;
-    }
-    .bg-normal { background-color: #10b981; }
-    .bg-caution { background-color: #f59e0b; }
-    .bg-error { background-color: #ef4444; }
-    .status-legend {
-      display: flex;
-      justify-content: flex-end;
-      gap: 16px;
+    .summary-card .sub {
       font-size: 12px;
-      color: #64748b;
+      color: #94a3b8;
+      margin-top: 4px;
     }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .legend-dot {
-      width: 8px;
+    .ratio-bar {
       height: 8px;
-      border-radius: 50%;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+      display: flex;
     }
+    .ratio-bar .segment {
+      height: 100%;
+    }
+    .badge-normal { background: #dcfce7; color: #15803d; }
+    .badge-suspect { background: #fef9c3; color: #a16207; }
+    .badge-error { background: #fee2e2; color: #b91c1c; }
+    .badge-missing { background: #f1f5f9; color: #64748b; }
     .table-container {
       background: #fff;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      padding: 20px;
-      overflow-x: auto;
+      overflow: hidden;
     }
-    .table-title {
+    .table-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .table-header h3 {
       font-size: 16px;
       font-weight: 700;
-      color: #1e293b;
-      margin-bottom: 16px;
+      color: #0f172a;
+      margin: 0;
     }
     .data-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
-      text-align: left;
     }
     .data-table th, .data-table td {
-      padding: 12px 14px;
+      padding: 12px 16px;
+      text-align: left;
       border-bottom: 1px solid #f1f5f9;
-      white-space: nowrap;
     }
     .data-table th {
-      background-color: #f8fafc;
-      color: #475569;
+      background: #f8fafc;
       font-weight: 600;
+      color: #475569;
     }
     .data-table tr:hover {
-      background-color: #f8fafc;
+      background: #f8fafc;
     }
     .badge {
       display: inline-block;
-      padding: 3px 8px;
+      padding: 2px 8px;
       border-radius: 4px;
       font-size: 12px;
       font-weight: 600;
     }
-    .badge-normal {
-      background-color: #d1fae5;
-      color: #065f46;
-    }
-    .badge-caution {
-      background-color: #fef3c7;
-      color: #92400e;
-    }
-    .badge-error {
-      background-color: #fee2e2;
-      color: #991b1b;
-    }
-    .pagination-box {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 16px;
-      font-size: 13px;
-      color: #64748b;
-    }
-    .page-buttons {
-      display: flex;
-      gap: 6px;
-    }
-    .page-btn {
-      padding: 6px 12px;
-      border: 1px solid #cbd5e1;
-      background: #fff;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-    .page-btn:hover {
-      background: #f1f5f9;
-    }
-    .page-btn.active {
-      background: #2563eb;
-      color: #fff;
-      border-color: #2563eb;
-    }
-    .page-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
+    .num-val {
+      font-variant-numeric: tabular-nums;
     }
   </style>
 </head>
 <body>
-  <div class="layout">
-    <!-- 사이드바 -->
-    <aside class="sidebar">
-      <div class="brand">
-        <h1>WeatherWorks</h1>
-        <p>건설공사 비작업일수·공사기간 산정</p>
-      </div>
-      <nav class="sidebar-nav">
-        <div class="nav-group-title">현황</div>
-        <a href="index.html" class="nav-item">현황 관리</a>
-        <a href="quantity.html" class="nav-item">공사 물량·생산성 산정</a>
-        <a href="stations.html" class="nav-item">구간별 관측지점</a>
-        <div class="nav-group-title">공사기간 산정</div>
-        <a href="schedule.html" class="nav-item">총괄·결과·Timeline</a>
-        <div class="nav-group-title">작업일수 산정</div>
-        <a href="duration-workdays.html" class="nav-item">비작업일수 산정·예측정확도</a>
-        <div class="nav-group-title">데이터 관리</div>
-        <a href="quality.html" class="nav-item active">기상데이터 품질관리</a>
-        <a href="data.html" class="nav-item">공정표 Import</a>
-        <a href="duration-weather.html" class="nav-item">데이터 관리</a>
-        <a href="admin.html" class="nav-item">기상 판정 기준·공휴일</a>
-      </nav>
-    </aside>
+  <div class="app-layout">
+    <div id="nav-placeholder"></div>
 
-    <!-- 메인 콘텐츠 영역 -->
     <main class="main-content">
-      <header class="top-header">
-        <h2 class="page-title">기상데이터 품질관리</h2>
-        <div class="system-status">시스템 상태: <span style="color:#10b981; font-weight:700;">정상 가동중</span></div>
-      </header>
+      <div class="page-header">
+        <div>
+          <h2>기상데이터 품질관리</h2>
+          <p class="subtitle">수집 데이터 이상치 검정 및 결측치 관리 내역</p>
+        </div>
+        <div class="header-actions">
+          <span class="status-indicator active"></span>
+          <span style="font-size: 13px; color: #475569;">실시간 검정 가동 중</span>
+        </div>
+      </div>
 
-      <div class="quality-container">
-        <!-- 시간별 상태 요약 카드 -->
-        <section class="status-card">
-          <div class="status-card-header">
-            <span class="status-card-title">시간별 상태 요약</span>
-            <span id="rateSummary" class="status-rate">데이터 로딩 중...</span>
+      <!-- 요약 통계 카드 (기존 유지) -->
+      <div class="quality-summary">
+        <div class="summary-card">
+          <div class="label">총 검정 건수</div>
+          <div class="value" id="totalChecks">-</div>
+          <div class="sub" id="totalPeriod">-</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">정상 데이터율</div>
+          <div class="value" id="normalRate" style="color: #15803d;">-%</div>
+          <div class="ratio-bar">
+            <div id="barNormal" class="segment" style="background: #22c55e; width: 0%;"></div>
+            <div id="barSuspect" class="segment" style="background: #eab308; width: 0%;"></div>
+            <div id="barError" class="segment" style="background: #ef4444; width: 0%;"></div>
           </div>
-          <div class="progress-bar-container">
-            <div id="barNormal" class="progress-bar-segment bg-normal" style="width: 0%;"></div>
-            <div id="barCaution" class="progress-bar-segment bg-caution" style="width: 0%;"></div>
-            <div id="barError" class="progress-bar-segment bg-error" style="width: 0%;"></div>
-          </div>
-          <div class="status-legend">
-            <div class="legend-item">
-              <span class="legend-dot bg-normal"></span>
-              <span id="labelNormal">정상 0건</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot bg-caution"></span>
-              <span id="labelCaution">주의 0건</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot bg-error"></span>
-              <span id="labelError">이상/결측 0건</span>
-            </div>
-          </div>
-        </section>
+        </div>
+        <div class="summary-card">
+          <div class="label">의심/주의 건수</div>
+          <div class="value" id="suspectCount" style="color: #a16207;">-</div>
+          <div class="sub">임계치 경계값 검출</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">이상/결측 건수</div>
+          <div class="value" id="errorCount" style="color: #b91c1c;">-</div>
+          <div class="sub">보정 및 제외 대상</div>
+        </div>
+      </div>
 
-        <!-- 세부 내역 테이블 -->
-        <section class="table-container">
-          <h3 class="table-title">기상데이터 품질관리 내역</h3>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>측정일시</th>
-                <th>항목</th>
-                <th>실제값</th>
-                <th>1백분위수</th>
-                <th>99백분위수</th>
-                <th>판정</th>
-                <th>판정 이유</th>
-              </tr>
-            </thead>
-            <tbody id="qualityTableBody">
-              <tr>
-                <td colspan="7" style="text-align: center; color: #64748b; padding: 30px;">데이터를 불러오는 중입니다...</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <!-- 페이지네이션 컨트롤 -->
-          <div class="pagination-box">
-            <span id="pageInfo">전체 0개 중 0-0 표시</span>
-            <div class="page-buttons" id="paginationControls"></div>
-          </div>
-        </section>
+      <!-- 품질관리 세부 내역 테이블 (기존 유지) -->
+      <div class="table-container">
+        <div class="table-header">
+          <h3>기상데이터 품질관리 내역</h3>
+          <span style="font-size: 13px; color: #64748b;" id="tableCountSummary"></span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>측정일시</th>
+              <th>항목</th>
+              <th>실제값</th>
+              <th>1백분위수</th>
+              <th>99백분위수</th>
+              <th>판정</th>
+              <th>판정 이유</th>
+            </tr>
+          </thead>
+          <tbody id="qualityTableBody">
+            <tr>
+              <td colspan="7" style="text-align: center; color: #94a3b8; padding: 32px;">데이터를 불러오는 중입니다...</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </main>
   </div>
 
+  <script src="js/nav.js"></script>
   <script>
-    let flattenedRows = [];
-    let currentPage = 1;
-    const pageSize = 40; // 1시간당 4개 요소이므로 10시간분량 단위로 페이징
-
-    // 각 기상 요소 매핑 설정 (키값 대응)
-    const WEATHER_ELEMENTS = [
-      { name: '기온', keyCandidate: ['temp', 'feelsLike', 'ta'], unit: '°C' },
-      { name: '습도', keyCandidate: ['humidity', 'hm'], unit: '%' },
-      { name: '강수량', keyCandidate: ['rain1h', 'precipitation', 'rn'], unit: 'mm' },
-      { name: '풍속', keyCandidate: ['wind', 'ws'], unit: 'm/s' }
-    ];
-
-    async function loadQualityData() {
+    document.addEventListener('DOMContentLoaded', async () => {
       try {
         const res = await fetch('data/quality-data.json');
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
+        if (!res.ok) throw new Error('데이터 파일을 불러올 수 없습니다.');
+        const rawData = await res.json();
 
-        // 1. JSON 내 records 배열 추출
-        let rawRecords = [];
-        if (Array.isArray(data)) {
-          rawRecords = data;
-        } else if (data.records && Array.isArray(data.records)) {
-          rawRecords = data.records;
-        } else if (data.data && Array.isArray(data.data)) {
-          rawRecords = data.data;
+        const records = Array.isArray(rawData) ? rawData : (rawData.records || rawData.data || []);
+        const tbody = document.getElementById('qualityTableBody');
+
+        if (!records || records.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 32px;">검정 내역이 없습니다.</td></tr>';
+          return;
         }
 
-        // 2. 시간대별 1개 레코드를 4대 기상 요소(기온, 습도, 강수량, 풍속) 행으로 전개
-        flattenedRows = [];
-        let countNormal = 0;
-        let countCaution = 0;
-        let countError = 0;
+        // 각 시간대별 기상 4개 요소 정의
+        const ELEMENT_MAP = [
+          { name: '기온', key: 'feelsLike', unit: '°C' },
+          { name: '습도', key: 'humidity', unit: '%' },
+          { name: '강수량', key: 'rain1h', unit: 'mm' },
+          { name: '풍속', key: 'wind', unit: 'm/s' }
+        ];
 
-        rawRecords.forEach(record => {
-          const timestamp = record.datetime || record.time || record.date || record.tm || '-';
-          const bounds = record.bounds || {};
-          const flags = Array.isArray(record.flags) ? record.flags : [];
+        const rows = [];
+        let totalChecks = 0;
+        let normalCount = 0;
+        let suspectCount = 0;
+        let errorCount = 0;
 
-          WEATHER_ELEMENTS.forEach(elem => {
-            // 실제값 탐색
-            let val = undefined;
-            for (const k of elem.keyCandidate) {
-              if (record[k] !== undefined && record[k] !== null) {
-                val = record[k];
-                break;
-              }
-            }
+        records.forEach(rec => {
+          const dt = rec.datetime || rec.time || rec.date || '-';
+          const bounds = rec.bounds || {};
 
-            // 백분위수 탐색
-            const boundObj = bounds[elem.name] || bounds[elem.keyCandidate[0]] || {};
-            const p01 = boundObj.p01 !== undefined ? boundObj.p01 : boundObj.q01;
-            const p99 = boundObj.p99 !== undefined ? boundObj.p99 : boundObj.q99;
+          ELEMENT_MAP.forEach(elem => {
+            totalChecks++;
+            const val = rec[elem.key];
+            const bound = bounds[elem.name] || {};
+            const p01 = bound.p01 !== undefined ? bound.p01 : '-';
+            const p99 = bound.p99 !== undefined ? bound.p99 : '-';
 
-            // 판정 결과 (전체 flags에 해당 항목이 포함되어 있거나 bounds를 벗어난 경우 확인)
-            let status = '정상';
-            let reason = record.reason || '10년 같은 월 기준 범위 내';
+            // 판정 상태 확인
+            let status = rec.status || '정상';
+            let reason = rec.reason || '10년 같은 월 기준 범위 내';
 
-            const isFlagged = flags.some(f => typeof f === 'string' && f.includes(elem.name));
-            if (isFlagged || record.status === '이상' || record.status === '오류') {
-              status = '이상';
-              reason = record.reason || '이상치 감지';
-            } else if (val !== undefined && p01 !== undefined && p99 !== undefined) {
+            // 개별 기준 범위(bounds) 초과 여부 확인
+            if (val !== undefined && p01 !== '-' && p99 !== '-') {
               if (val < p01 || val > p99) {
                 status = '주의';
-                reason = `기준 범위 초과 (${p01} ~ ${p99})`;
+                reason = `기준치 초과 (${p01} ~ ${p99})`;
               }
-            } else if (val === undefined || val === null) {
-              status = '결측';
-              reason = '관측 데이터 미수신';
             }
 
-            // 통계 합산
-            if (status === '정상') countNormal++;
-            else if (status === '주의') countCaution++;
-            else countError++;
+            // 배지 클래스 매핑
+            let badgeClass = 'badge-normal';
+            if (status === '정상') {
+              normalCount++;
+            } else if (status === '주의' || status === '의심') {
+              badgeClass = 'badge-suspect';
+              suspectCount++;
+            } else {
+              badgeClass = 'badge-error';
+              errorCount++;
+            }
 
-            flattenedRows.push({
-              datetime: timestamp,
-              element: elem.name,
-              value: val !== undefined ? `${val} ${elem.unit}` : '-',
-              p01: p01 !== undefined ? `${p01}` : '-',
-              p99: p99 !== undefined ? `${p99}` : '-',
-              status: status,
-              reason: reason
-            });
+            rows.push(`
+              <tr>
+                <td>${dt}</td>
+                <td><strong>${elem.name}</strong></td>
+                <td class="num-val">${val !== undefined ? `${val} ${elem.unit}` : '-'}</td>
+                <td class="num-val">${p01}</td>
+                <td class="num-val">${p99}</td>
+                <td><span class="badge ${badgeClass}">${status}</span></td>
+                <td>${reason}</td>
+              </tr>
+            `);
           });
         });
 
-        // 3. 상단 요약 바 업데이트
-        const totalCount = flattenedRows.length;
-        if (totalCount > 0) {
-          const pctNormal = ((countNormal / totalCount) * 100).toFixed(1);
-          const pctCaution = ((countCaution / totalCount) * 100).toFixed(1);
-          const pctError = ((countError / totalCount) * 100).toFixed(1);
+        // 1. 테이블 채우기 (렌더링 최적화를 위해 상위 100건 표시)
+        const displayLimit = 100;
+        tbody.innerHTML = rows.slice(0, displayLimit).join('');
 
-          document.getElementById('barNormal').style.width = `${pctNormal}%`;
-          document.getElementById('barCaution').style.width = `${pctCaution}%`;
-          document.getElementById('barError').style.width = `${pctError}%`;
+        // 2. 상단 원본 통계 카드 업데이트
+        document.getElementById('totalChecks').textContent = totalChecks.toLocaleString() + '건';
+        document.getElementById('totalPeriod').textContent = `최근 ${records.length}개 시간대 관측`;
 
-          document.getElementById('rateSummary').textContent = `수집률 ${pctNormal}% · 총 ${rawRecords.length}개 시간대 (${totalCount}건 검증)`;
-          document.getElementById('labelNormal').textContent = `정상 ${countNormal}건`;
-          document.getElementById('labelCaution').textContent = `주의 ${countCaution}건`;
-          document.getElementById('labelError').textContent = `이상/결측 ${countError}건`;
-        }
+        const normalRate = ((normalCount / totalChecks) * 100).toFixed(1);
+        document.getElementById('normalRate').textContent = normalRate + '%';
+        document.getElementById('barNormal').style.width = normalRate + '%';
+        document.getElementById('barSuspect').style.width = ((suspectCount / totalChecks) * 100).toFixed(1) + '%';
+        document.getElementById('barError').style.width = ((errorCount / totalChecks) * 100).toFixed(1) + '%';
 
-        // 4. 테이블 렌더링
-        renderTable();
+        document.getElementById('suspectCount').textContent = suspectCount.toLocaleString() + '건';
+        document.getElementById('errorCount').textContent = errorCount.toLocaleString() + '건';
+
+        document.getElementById('tableCountSummary').textContent = `총 ${totalChecks.toLocaleString()}건 중 최근 ${Math.min(displayLimit, totalChecks)}건 표시`;
+
       } catch (err) {
-        console.error('기상 품질 데이터 로딩 실패:', err);
-        document.getElementById('qualityTableBody').innerHTML = `
-          <tr>
-            <td colspan="7" style="text-align:center; color:#ef4444; padding:20px;">
-              데이터를 불러오지 못했습니다. (${err.message})
-            </td>
-          </tr>
-        `;
+        console.error(err);
+        document.getElementById('qualityTableBody').innerHTML = `<tr><td colspan="7" style="text-align: center; color: #ef4444; padding: 32px;">데이터 로드 실패: ${err.message}</td></tr>`;
       }
-    }
-
-    function renderTable() {
-      const tbody = document.getElementById('qualityTableBody');
-      const total = flattenedRows.length;
-
-      if (total === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px;">표시할 데이터가 없습니다.</td></tr>`;
-        return;
-      }
-
-      const startIndex = (currentPage - 1) * pageSize;
-      const endIndex = Math.min(startIndex + pageSize, total);
-      const pageData = flattenedRows.slice(startIndex, endIndex);
-
-      const html = pageData.map(row => {
-        let badgeClass = 'badge-normal';
-        if (row.status === '주의') badgeClass = 'badge-caution';
-        else if (row.status === '이상' || row.status === '결측') badgeClass = 'badge-error';
-
-        return `
-          <tr>
-            <td>${row.datetime}</td>
-            <td style="font-weight: 600;">${row.element}</td>
-            <td style="font-weight: 600; color: #1e293b;">${row.value}</td>
-            <td style="color: #64748b;">${row.p01}</td>
-            <td style="color: #64748b;">${row.p99}</td>
-            <td><span class="badge ${badgeClass}">${row.status}</span></td>
-            <td style="color: #475569;">${row.reason}</td>
-          </tr>
-        `;
-      }).join('');
-
-      tbody.innerHTML = html;
-      document.getElementById('pageInfo').textContent = `전체 ${total}개 항목 중 ${startIndex + 1}-${endIndex} 표시`;
-      renderPaginationControls(Math.ceil(total / pageSize));
-    }
-
-    function renderPaginationControls(totalPages) {
-      const container = document.getElementById('paginationControls');
-      let buttonsHtml = '';
-
-      buttonsHtml += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="gotoPage(${currentPage - 1})">이전</button>`;
-
-      const startPage = Math.max(1, currentPage - 2);
-      const endPage = Math.min(totalPages, currentPage + 2);
-
-      for (let p = startPage; p <= endPage; p++) {
-        buttonsHtml += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="gotoPage(${p})">${p}</button>`;
-      }
-
-      buttonsHtml += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="gotoPage(${currentPage + 1})">다음</button>`;
-      container.innerHTML = buttonsHtml;
-    }
-
-    function gotoPage(page) {
-      currentPage = page;
-      renderTable();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // 초기 실행
-    document.addEventListener('DOMContentLoaded', loadQualityData);
+    });
   </script>
 </body>
 </html>
