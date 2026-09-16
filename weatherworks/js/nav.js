@@ -18,7 +18,6 @@ function renderSidebar() {
     {
       group: "공사기간 산정",
       items: [
-        { name: "총괄·결과·Timeline", href: "duration.html" },
         { name: "작업일수 산정", href: "duration-workdays.html" },
         { name: "비작업일수 산정·예측정확도", href: "duration-weather.html" }
       ]
