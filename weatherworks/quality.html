@@ -178,11 +178,11 @@
 </head>
 <body>
 <div id="app-shell">
-  <!-- 사이드바 (nav.js 자동 주입) -->
+  <!-- 사이드바 (nav.js 원본 주입) -->
   <aside id="sidebar"></aside>
 
   <div class="main">
-    <!-- 상단바 (nav.js 자동 주입) -->
+    <!-- 상단바 (nav.js 원본 주입) -->
     <header id="topbar"></header>
 
     <main id="page-content">
@@ -323,7 +323,7 @@
 <script src="js/calc.js"></script>
 <script src="js/nav.js"></script>
 <script>
-// 날짜 및 시간 정밀 추출 함수
+// 날짜 및 시간 정밀 추출 함수 (두 자리 일자/시간 우선 파싱 버그 수정)
 function parseRecordDateTime(rec) {
   if (!rec) return null;
   let str = rec.tm || rec.time || rec.datetime || rec.date || rec.timestamp || rec.dt;
@@ -337,7 +337,8 @@ function parseRecordDateTime(rec) {
   }
   if (!str || typeof str !== 'string') return null;
 
-  const m = str.match(/(20\d\d)[-/.년\s]+(0?[1-9]|1[0-2])[-/.월\s]+(0?[1-9]|[12]\d|3[01])(?:\s+(\d{1,2}):?(\d{2})?)?/);
+  // 두 자리 일자(10~31)가 한 자리 일자(1~3)로 조기 매칭되지 않도록 greedy \d{1,2} 적용
+  const m = str.match(/(20\d{2})[-/.년\s]+(\d{1,2})[-/.월\s]+(\d{1,2})(?:[T\s]+(\d{1,2})(?::(\d{2}))?)?/);
   if (!m) return null;
 
   const year = parseInt(m[1], 10);
@@ -434,7 +435,7 @@ function renderTable(records) {
   tbody.innerHTML = rowsHtml.slice(0, 100).join('');
 }
 
-// Admin 상세 판정 기준에 의거한 캘린더 생성 함수
+// Admin 원본 판정 기준에 따른 캘린더 생성 함수
 function buildCalendar(year, month, records) {
   const grid = document.getElementById('calendarGrid');
   grid.innerHTML = '';
@@ -445,7 +446,7 @@ function buildCalendar(year, month, records) {
   const workName = workSelect.options[workSelect.selectedIndex].text;
   document.getElementById('calTitleDisplay').textContent = `${year}년 ${month}월 · ${siteName} · ${workName}`;
 
-  // 1. 해당 연/월의 실측치를 일자별 시간대 배열로 정리
+  // 1. 해당 연/월의 실측치를 일자별 시간대 배열로 그룹화
   const daysMap = {};
   let totalMonthRecords = 0;
 
@@ -474,7 +475,7 @@ function buildCalendar(year, month, records) {
     });
   });
 
-  // 2. 일자별 Admin 기준 정밀 판정 로직
+  // 2. Admin 공식 판정 기준 적용 (오전/오후 독립 판정)
   const dayEvaluations = {};
 
   Object.keys(daysMap).forEach(dateKey => {
@@ -493,12 +494,11 @@ function buildCalendar(year, month, records) {
     });
 
     // 주간 기준 근무시간 (07:00 ~ 17:00) 필터링
-    const workHours = hourList.filter(item => item.hour >= 7 && item.hour <= 17);
-    const morningHours = workHours.filter(item => item.hour >= 7 && item.hour <= 12);
-    const afternoonHours = workHours.filter(item => item.hour >= 13 && item.hour <= 17);
+    const morningHours = hourList.filter(item => item.hour >= 7 && item.hour <= 12);
+    const afternoonHours = hourList.filter(item => item.hour >= 13 && item.hour <= 17);
 
-    // [Admin 기준 1] 지속성 강우: 근무시간 중 2시간 연속 시간당 강수량 1.0mm 이상 발생 시
-    const has2hConsecutiveRain = (list) => {
+    // [Admin 기준 1] 지속성 강우: 오전 또는 오후 각각 2시간 연속 시간당 강수량 1.0mm 이상 발생 시 반일 오프
+    const checkConsecutiveRain = (list) => {
       let streak = 0;
       for (const h of list) {
         if (h.rain >= 1.0) {
@@ -511,21 +511,21 @@ function buildCalendar(year, month, records) {
       return false;
     };
 
-    const morningRainStop = has2hConsecutiveRain(morningHours);
-    const afternoonRainStop = has2hConsecutiveRain(afternoonHours);
+    const morningRainStop = checkConsecutiveRain(morningHours);
+    const afternoonRainStop = checkConsecutiveRain(afternoonHours);
 
-    // [Admin 기준 2] 강풍: 근무시간 중 순간/시간 풍속 15.0m/s 이상 발생 시
+    // [Admin 기준 2] 강풍: 근무시간 중 풍속 15.0m/s 이상 시 해당 반일 작업 중지
     const morningWindStop = morningHours.some(h => h.wind >= 15.0);
     const afternoonWindStop = afternoonHours.some(h => h.wind >= 15.0);
 
     // [Admin 기준 3] 혹서기(폭염)
-    const heatHeavyStop = maxTemp >= 38.0; // 38도 이상 당일 전일 작업 중지
-    const heatLightStop = maxTemp >= 35.0; // 35도 이상 14시~17시 중지 (오후 중지)
+    const heatHeavyStop = maxTemp >= 38.0; // 38℃ 이상 당일 전일 작업 중지
+    const heatLightStop = maxTemp >= 35.0; // 35℃ 이상 14시~17시 작업 중지 (오후 반일)
 
     // [Admin 기준 4] 혹한기(한파)
-    const coldStop = minTemp <= -12.0; // -12도 이하 당일 전일 작업 중지
+    const coldStop = minTemp <= -12.0;     // -12℃ 이하 당일 전일 작업 중지
 
-    // 반일별 중지 결합
+    // 오전/오후 반일 중지 여부 결합
     const morningStop = morningRainStop || morningWindStop;
     const afternoonStop = afternoonRainStop || afternoonWindStop || heatLightStop;
     const fullDayStop = heatHeavyStop || coldStop || (morningStop && afternoonStop);
@@ -539,11 +539,12 @@ function buildCalendar(year, month, records) {
       badDays = 1.0;
       if (heatHeavyStop) reasonList.push('폭염(38℃↑)');
       if (coldStop) reasonList.push('한파(-12℃↓)');
-      if (morningStop && afternoonStop) reasonList.push('전일 강우/강풍');
+      if (morningStop && afternoonStop) reasonList.push('오전·오후 지속강우/강풍');
     } else if (morningStop || afternoonStop) {
       badHours = 4;
       badDays = 0.5;
-      if (morningRainStop || afternoonRainStop) reasonList.push('지속성 강우(연속2h 1mm↑)');
+      if (morningRainStop) reasonList.push('오전 지속강우');
+      if (afternoonRainStop) reasonList.push('오후 지속강우');
       if (morningWindStop || afternoonWindStop) reasonList.push('강풍(15m/s↑)');
       if (heatLightStop) reasonList.push('폭염(35℃↑)');
     }
@@ -558,7 +559,7 @@ function buildCalendar(year, month, records) {
     };
   });
 
-  // 3. 달력 렌더링
+  // 3. 달력 그리드 렌더링
   const firstDay = new Date(year, month - 1, 1).getDay();
   const lastDate = new Date(year, month, 0).getDate();
 
@@ -639,7 +640,7 @@ function buildCalendar(year, month, records) {
     grid.appendChild(cell);
   }
 
-  // 4. 상단 4대 요약 카드 업데이트
+  // 4. 상단 4대 요약 카드 수치 갱신
   document.getElementById('stat-collected-days').innerHTML = `${collectedDaysCount}<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span>`;
   document.getElementById('stat-collected-desc').textContent = `총 ${lastDate}일 중 ${collectedDaysCount}일 실측 완료`;
 
